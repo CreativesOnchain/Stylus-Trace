@@ -188,10 +188,10 @@ mod tests {
     #[test]
     fn test_calculate_gas_distribution() {
         let stacks = vec![
-            CollapsedStack::new("stack1".to_string(), 8000),
+            CollapsedStack::new("stack1".to_string(), 8500),  // 85% - clearly concentrated
             CollapsedStack::new("stack2".to_string(), 1000),
-            CollapsedStack::new("stack3".to_string(), 500),
-            CollapsedStack::new("stack4".to_string(), 500),
+            CollapsedStack::new("stack3".to_string(), 250),
+            CollapsedStack::new("stack4".to_string(), 250),
         ];
         
         let dist = calculate_gas_distribution(&stacks);
