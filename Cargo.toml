@@ -17,8 +17,6 @@ serde_json = "1.0"
 # HTTP client - async runtime not needed for this use case
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 
-# Flamegraph generation - battle-tested, used by cargo-flamegraph
-inferno = "0.11"
 
 # Error handling - composable, ergonomic
 anyhow = "1.0"      # For application errors
@@ -30,6 +28,9 @@ log = "0.4"
 
 # Date/time handling for timestamps
 chrono = { version = "0.4", features = ["serde"] }
+
+# Flamegraph generation battle tested, used by cargo flamegraph
+inferno = { version = "0.11", default-features = false, features = ["nameattr"] }
 
 [dev-dependencies]
 tempfile = "3.10"   # For testing file outputs
