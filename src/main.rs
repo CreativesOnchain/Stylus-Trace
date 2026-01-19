@@ -143,6 +143,7 @@ fn main() -> Result<()> {  // Add return type
                 top_paths,
                 flamegraph_config: fg_config,
                 print_summary: summary,
+                tracer: Some("stylusTracer".to_string()), 
             };
             
             // Validate args first

@@ -74,15 +74,33 @@ pub fn parse_trace(
 ) -> Result<ParsedTrace, ParseError> {
     debug!("Parsing trace for transaction: {}", tx_hash);
     
-    // Validate that we have an object
-    let trace_obj = raw_trace.as_object()
-        .ok_or_else(|| ParseError::InvalidFormat("Expected trace to be a JSON object".to_string()))?;
+    // Handle different trace formats
+    let trace_obj = match raw_trace {
+        // Format 1: Direct object with structLogs/gasUsed
+        serde_json::Value::Object(obj) => obj.clone(),
+        
+        // Format 2: Array of structLogs (wrap it)
+        serde_json::Value::Array(logs) => {
+            warn!("Trace is array format, wrapping as structLogs");
+            let mut wrapper = serde_json::Map::new();
+            wrapper.insert("structLogs".to_string(), raw_trace.clone());
+            wrapper.insert("gasUsed".to_string(), serde_json::json!(0));
+            wrapper
+        }
+        
+        // Format 3: Invalid
+        _ => {
+            return Err(ParseError::InvalidFormat(
+                "Trace must be a JSON object or array".to_string()
+            ));
+        }
+    };
     
     // Extract total gas used
-    let total_gas_used = extract_total_gas(trace_obj)?;
+    let total_gas_used = extract_total_gas(&trace_obj)?;
     
     // Extract execution steps
-    let execution_steps = extract_execution_steps(trace_obj)?;
+    let execution_steps = extract_execution_steps(&trace_obj)?;
     
     debug!("Parsed {} execution steps", execution_steps.len());
     

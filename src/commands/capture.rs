@@ -44,6 +44,8 @@ pub struct CaptureArgs {
     
     /// Print text summary to stdout
     pub print_summary: bool,
+
+    pub tracer: Option<String>,
 }
 
 impl Default for CaptureArgs {
@@ -56,6 +58,7 @@ impl Default for CaptureArgs {
             top_paths: 20,
             flamegraph_config: None,
             print_summary: false,
+            tracer: Some("stylusTracer".to_string()),
         }
     }
 }
@@ -97,7 +100,7 @@ pub fn execute_capture(args: CaptureArgs) -> Result<()> {
     
     // Step 1: Fetch trace from RPC
     info!("Step 1/6: Fetching trace from RPC...");
-    let raw_trace = fetch_trace(&args.rpc_url, &args.transaction_hash)
+    let raw_trace = fetch_trace(&args.rpc_url, &args.transaction_hash, args.tracer.as_deref())
         .context("Failed to fetch trace from RPC")?;
     
     // Step 2: Parse trace
@@ -183,13 +186,11 @@ pub fn execute_capture(args: CaptureArgs) -> Result<()> {
 /// Fetch trace from RPC endpoint
 ///
 /// **Private** - internal helper for execute_capture
-fn fetch_trace(rpc_url: &str, tx_hash: &str) -> Result<serde_json::Value> {
-    // Create RPC client
+fn fetch_trace(rpc_url: &str, tx_hash: &str, tracer: Option<&str>) -> Result<serde_json::Value> {
     let client = RpcClient::new(rpc_url)
         .context("Failed to create RPC client")?;
     
-    // Fetch trace
-    let trace = client.debug_trace_transaction(tx_hash)
+    let trace = client.debug_trace_transaction_with_tracer(tx_hash, tracer)
         .context(format!("Failed to fetch trace for transaction {}", tx_hash))?;
     
     Ok(trace)
@@ -262,6 +263,7 @@ pub fn quick_capture(rpc_url: &str, tx_hash: &str) -> Result<(PathBuf, PathBuf)>
         top_paths: 20,
         flamegraph_config: None,
         print_summary: false,
+        tracer: Some("stylusTracer".to_string()), 
     };
     
     execute_capture(args.clone())?;

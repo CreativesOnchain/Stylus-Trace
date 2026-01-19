@@ -1,6 +1,6 @@
 //! HTTP client for communicating with Arbitrum Nitro node RPC endpoint.
 
-use super::types::{JsonRpcRequest, JsonRpcResponse, RawTraceData};
+use super::types::{JsonRpcResponse, RawTraceData};
 use crate::utils::error::RpcError;
 use crate::utils::config::DEFAULT_RPC_TIMEOUT;
 use log::{debug, info};
@@ -15,12 +15,6 @@ pub struct RpcClient {
 
 impl RpcClient {
     /// Create a new RPC client
-    ///
-    /// # Arguments
-    /// * `rpc_url` - Base URL of the RPC endpoint (e.g., "http://localhost:8547")
-    ///
-    /// # Errors
-    /// Returns `RpcError` if client creation fails
     pub fn new(rpc_url: impl Into<String>) -> Result<Self, RpcError> {
         let client = Client::builder()
             .timeout(DEFAULT_RPC_TIMEOUT)
@@ -49,27 +43,38 @@ impl RpcClient {
         })
     }
 
-    /// Fetch trace data for a transaction using debug_traceTransaction
-    ///
-    /// # Arguments
-    /// * `tx_hash` - Transaction hash (with or without 0x prefix)
-    ///
-    /// # Returns
-    /// Raw trace data as JSON (to be parsed by parser module)
-    ///
-    /// # Errors
-    /// * `RpcError::RequestFailed` if HTTP request fails
-    /// * `RpcError::InvalidResponse` if response is malformed
-    /// * `RpcError::TransactionNotFound` if transaction doesn't exist
-    /// * `RpcError::TracerNotSupported` if stylusTracer is not available
+    /// Fetch trace with default (no tracer)
     pub fn debug_trace_transaction(&self, tx_hash: &str) -> Result<RawTraceData, RpcError> {
-        // Ensure tx_hash has 0x prefix
+        self.debug_trace_transaction_with_tracer(tx_hash, None)
+    }
+    
+    /// Fetch trace with optional tracer
+    pub fn debug_trace_transaction_with_tracer(
+        &self,
+        tx_hash: &str,
+        tracer: Option<&str>,
+    ) -> Result<RawTraceData, RpcError> {
         let tx_hash = normalize_tx_hash(tx_hash);
         
         info!("Fetching trace for transaction: {}", tx_hash);
         
+        // Build params based on tracer
+        let params = if let Some(tracer_name) = tracer {
+            serde_json::json!([
+                tx_hash,
+                { "tracer": tracer_name }
+            ])
+        } else {
+            serde_json::json!([tx_hash])
+        };
+        
         // Build RPC request
-        let request = JsonRpcRequest::debug_trace_transaction(tx_hash.clone(), 1);
+        let request = serde_json::json!({
+            "jsonrpc": "2.0",
+            "method": "debug_traceTransaction",
+            "params": params,
+            "id": 1
+        });
         
         debug!("RPC request: {:?}", request);
         
@@ -108,8 +113,6 @@ impl RpcClient {
 }
 
 /// Normalize transaction hash to include 0x prefix
-///
-/// **Private** - internal helper, not part of public API
 fn normalize_tx_hash(tx_hash: &str) -> String {
     if tx_hash.starts_with("0x") {
         tx_hash.to_string()
@@ -119,12 +122,9 @@ fn normalize_tx_hash(tx_hash: &str) -> String {
 }
 
 /// Map JSON-RPC error to our error type
-///
-/// **Private** - internal error mapping logic
 fn map_rpc_error(error: super::types::JsonRpcError, tx_hash: &str) -> RpcError {
     match error.code {
         -32000 => {
-            // Common code for "transaction not found"
             if error.message.to_lowercase().contains("not found") {
                 RpcError::TransactionNotFound(tx_hash.to_string())
             } else {
@@ -132,7 +132,6 @@ fn map_rpc_error(error: super::types::JsonRpcError, tx_hash: &str) -> RpcError {
             }
         }
         -32601 => {
-            // Method not found - likely tracer not supported
             RpcError::TracerNotSupported
         }
         _ => RpcError::InvalidResponse(format!("{}: {}", error.code, error.message)),
@@ -145,13 +144,7 @@ mod tests {
 
     #[test]
     fn test_normalize_tx_hash() {
-        assert_eq!(
-            normalize_tx_hash("abc123"),
-            "0xabc123"
-        );
-        assert_eq!(
-            normalize_tx_hash("0xdef456"),
-            "0xdef456"
-        );
+        assert_eq!(normalize_tx_hash("abc123"), "0xabc123");
+        assert_eq!(normalize_tx_hash("0xdef456"), "0xdef456");
     }
 }
