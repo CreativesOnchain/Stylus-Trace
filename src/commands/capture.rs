@@ -45,6 +45,7 @@ pub struct CaptureArgs {
     /// Print text summary to stdout
     pub print_summary: bool,
 
+    /// Optional tracer name (None = default opcode tracer)
     pub tracer: Option<String>,
 }
 
@@ -58,7 +59,7 @@ impl Default for CaptureArgs {
             top_paths: 20,
             flamegraph_config: None,
             print_summary: false,
-            tracer: Some("stylusTracer".to_string()),
+            tracer: None,  // FIXED: Use default opcode tracer
         }
     }
 }
@@ -88,6 +89,7 @@ impl Default for CaptureArgs {
 ///     top_paths: 20,
 ///     flamegraph_config: None,
 ///     print_summary: true,
+///     tracer: None,
 /// };
 /// 
 /// execute_capture(args)?;
@@ -263,7 +265,7 @@ pub fn quick_capture(rpc_url: &str, tx_hash: &str) -> Result<(PathBuf, PathBuf)>
         top_paths: 20,
         flamegraph_config: None,
         print_summary: false,
-        tracer: Some("stylusTracer".to_string()), 
+        tracer: None,  // FIXED: Use default opcode tracer
     };
     
     execute_capture(args.clone())?;

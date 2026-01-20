@@ -126,7 +126,7 @@ pub fn parse_trace(
 /// **Private** - internal extraction logic
 fn extract_total_gas(trace_obj: &serde_json::Map<String, serde_json::Value>) -> Result<u64, ParseError> {
     // Try multiple possible field names (trace format may vary)
-    let gas_fields = ["gasUsed", "gas_used", "totalGas", "total_gas"];
+    let gas_fields = ["gas", "gasUsed", "gas_used", "totalGas", "total_gas"];
     
     for field in &gas_fields {
         if let Some(gas_value) = trace_obj.get(*field) {

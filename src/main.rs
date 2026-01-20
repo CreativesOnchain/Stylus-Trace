@@ -95,7 +95,7 @@ enum Commands {
     Version,
 }
 
-fn main() -> Result<()> {  // Add return type
+fn main() -> Result<()> {
     // Parse CLI arguments
     let cli = Cli::parse();
     
@@ -143,7 +143,7 @@ fn main() -> Result<()> {  // Add return type
                 top_paths,
                 flamegraph_config: fg_config,
                 print_summary: summary,
-                tracer: Some("stylusTracer".to_string()), 
+                tracer: None,  // FIXED: Use default opcode tracer
             };
             
             // Validate args first
@@ -166,7 +166,7 @@ fn main() -> Result<()> {  // Add return type
         }
     }
     
-    Ok(())  // Return Ok
+    Ok(())
 }
 
 /// Parse palette string to enum

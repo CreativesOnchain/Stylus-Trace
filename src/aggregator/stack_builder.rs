@@ -95,7 +95,7 @@ pub fn build_collapsed_stacks(parsed_trace: &ParsedTrace) -> Vec<CollapsedStack>
             .or(step.op.as_deref())
             .unwrap_or("unknown");
         
-        // FIXED: Handle depth changes properly
+        // Handle depth changes properly
         let current_depth = step.depth as usize;
         
         // If depth decreased, we returned from function calls
@@ -104,8 +104,6 @@ pub fn build_collapsed_stacks(parsed_trace: &ParsedTrace) -> Vec<CollapsedStack>
         }
         
         // If depth increased, we entered a new call
-        // (Note: EVM traces don't always give us the function name on entry,
-        //  so we add a placeholder and the actual operation will override it)
         while call_stack.len() < current_depth {
             call_stack.push("call".to_string());
         }
@@ -117,10 +115,8 @@ pub fn build_collapsed_stacks(parsed_trace: &ParsedTrace) -> Vec<CollapsedStack>
             format!("{};{}", call_stack.join(";"), operation)
         };
         
-        // Add gas cost to this stack (FIXED: now actually accumulates)
-        if step.gas_cost > 0 {
-            *stack_map.entry(stack_str).or_insert(0) += step.gas_cost;
-        }
+        // FIXED: Always add to map, accumulate all gas costs (even 0)
+        *stack_map.entry(stack_str).or_insert(0) += step.gas_cost;
         
         prev_depth = step.depth;
     }
