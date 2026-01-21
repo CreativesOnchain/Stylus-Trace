@@ -1,49 +1,32 @@
 [package]
-name = "stylus-trace-studio"
+name = "stylus-trace"
 version = "0.1.0"
 edition = "2021"
 authors = ["Stylus Trace Team"]
 license = "MIT"
 description = "Performance profiling and flamegraph generation for Arbitrum Stylus transactions"
+repository = "https://github.com/YOUR_ORG_OR_USERNAME/stylus-trace"
+homepage = "https://github.com/YOUR_ORG_OR_USERNAME/stylus-trace"
+documentation = "https://docs.rs/stylus-trace"
+readme = "README.md"
+keywords = ["arbitrum", "stylus", "profiling", "flamegraph", "wasm"]
+categories = ["command-line-utilities", "development-tools"]
 
 [dependencies]
-# CLI framework - stable, well-maintained
 clap = { version = "4.5", features = ["derive", "env"] }
-
-# JSON serialization - de facto standard
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-
-# HTTP client - async runtime not needed for this use case
 reqwest = { version = "0.12", features = ["blocking", "json"] }
-
-
-# Error handling - composable, ergonomic
-anyhow = "1.0"      # For application errors
-thiserror = "1.0"   # For library errors
-
-# Logging
+anyhow = "1.0"
+thiserror = "1.0"
 env_logger = "0.11"
 log = "0.4"
-
-# Date/time handling for timestamps
 chrono = { version = "0.4", features = ["serde"] }
-
-# Flamegraph generation battle tested, used by cargo flamegraph
 inferno = { version = "0.11", default-features = false, features = ["nameattr"] }
 
 [dev-dependencies]
-tempfile = "3.10"   # For testing file outputs
-pretty_assertions = "1.4"  # Better test output
-
-[profile.release]
-opt-level = 3
-lto = true          # Link-time optimization
-codegen-units = 1   # Better optimization, slower compile
-strip = true        # Smaller binaries
-
-[profile.dev]
-opt-level = 0       # Fast compilation
+tempfile = "3.10"
+pretty_assertions = "1.4"
 
 [lib]
 name = "stylus_trace_studio"
@@ -52,3 +35,9 @@ path = "src/lib.rs"
 [[bin]]
 name = "stylus-trace"
 path = "src/main.rs"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+strip = true
