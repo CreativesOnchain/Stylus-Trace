@@ -2,6 +2,16 @@
 name = "stylus-trace"
 version = "0.1.0"
 edition = "2021"
+
+exclude = [
+  "target/*",
+  ".git/*",
+  ".github/*",
+  "*.svg",
+  "*.json",
+  "profiles/*",
+  "node_modules/*"
+]
 authors = ["Stylus Trace Team"]
 license = "MIT"
 description = "Performance profiling and flamegraph generation for Arbitrum Stylus transactions"

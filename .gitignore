@@ -1,1 +1,5 @@
-target.DS_Store
+/target
+.DS_Store
+*.svg
+*.json
+profiles/
