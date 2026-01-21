@@ -27,7 +27,7 @@ The binary will be at `./target/release/stylus-trace`.
 
 ---
 
-## 📋 Complete Testing Guide
+## Complete Testing Guide
 
 ### Step 1: Start Nitro Dev Node
 
@@ -187,7 +187,7 @@ open -a "Google Chrome" flamegraph.svg
 
 ---
 
-## 📖 CLI Command Reference
+## CLI Command Reference
 
 ### Main Commands
 
@@ -314,7 +314,7 @@ Display version information:
 
 ---
 
-## 📊 Understanding the Output
+## Understanding the Output
 
 ### Profile JSON (`profile.json`)
 
@@ -364,7 +364,7 @@ The flamegraph visualizes gas consumption:
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Issue: "Connection refused" or RPC errors
 
@@ -399,7 +399,7 @@ curl http://localhost:8547
 - Only profile **function call transactions**, not deployments
 - Ensure you're calling an actual contract function:
   ```bash
-  # ✅ Good - function call
+  # Good - function call
   cast send $CONTRACT "add(uint256,uint256)" 42 58 ...
   
   # ❌ Bad - deployment transaction
@@ -424,12 +424,12 @@ curl http://localhost:8547
 
 ---
 
-## 🎯 Best Practices
+## Best Practices
 
 ### 1. Profile Function Calls, Not Deployments
 
 ```bash
-# ✅ Profile this
+# Profile this
 TX=$(cast send $CONTRACT "myFunction()" ... --json | jq -r '.transactionHash')
 ./target/release/stylus-trace capture --tx $TX ...
 
@@ -474,7 +474,7 @@ mkdir -p profiles/$(git rev-parse --short HEAD)
 
 ---
 
-## 🧪 Example Workflows
+## Example Workflows
 
 ### Basic Profiling
 
@@ -534,7 +534,7 @@ done
 
 ---
 
-## 📚 Additional Resources
+## Additional Resources
 
 - [Arbitrum Stylus Documentation](https://docs.arbitrum.io/stylus/stylus-gentle-introduction)
 - [Nitro Dev Node](https://github.com/OffchainLabs/nitro-devnode)
@@ -543,19 +543,19 @@ done
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ---
 
-## 📄 License
+## License
 
 [MIT License](LICENSE)
 
 ---
 
-## 🙋 Support
+## Support
 
 - **Issues**: [GitHub Issues](https://github.com/Timi16/stylus-trace/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/Timi16/stylus-trace/discussions)
