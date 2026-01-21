@@ -1,160 +1,566 @@
-# Stylus-Trace
+# Stylus Trace Studio
 
-Developer Tooling
+**Performance profiling and flamegraph generation for Arbitrum Stylus transactions.**
 
-Details
+Stylus Trace Studio turns opaque transaction traces into visual flamegraphs and actionable reports. Profile gas usage, identify bottlenecks, and catch performance regressions—all locally with the Nitro dev node.
 
-Arbitrum Stylus brings a second virtual machine to the stack, letting teams write smart contracts in Rust and other Wasm languages that interoperate with Solidity on the EVM. That power comes with a painful gap. When a transaction behaves badly or costs spike, developers are left staring at raw trace JSON or dropping into low-level debuggers. It is slow, brittle, and hides the real story behind HostIO usage and the hot paths where Wasm and EVM meet. Teams guess, rerun tests, and still ship regressions to testnet or mainnet. What should be a quick diagnosis turns into hours of forensic work, and the cost of that uncertainty compounds across every release.
+---
 
+## Quick Start
 
-Stylus Trace Studio turns those opaque traces into something you can see, trust, and act on. The CLI ingests debug_traceTransaction with the Stylus tracer, aggregates HostIO events and call boundaries, and produces clear flamegraphs and concise JSON reports that highlight the true bottlenecks. A simple web viewer lets you zoom and compare runs side by side, while a ready-made GitHub Action spins up the Nitro dev node, replays a scripted transaction, and fails the pull request when thresholds are exceeded. No secrets, no keys, no reliance on paid RPCs by default. It complements cargo-stylus replay for step-through debugging and sits alongside unit test helpers, but fills the missing layer of aggregate, CI-friendly observability that catches problems before users ever feel them.
+### Prerequisites
 
+- **Docker** (for Nitro dev node)
+- **Rust** toolchain: `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+- **Foundry** (for `cast`): `curl -L https://foundry.paradigm.xyz | bash && foundryup`
+- **Cargo Stylus**: `cargo install --force cargo-stylus`
 
-The result is a calmer, faster feedback loop for every Stylus team. Engineers get truthful pictures of performance and cost, reviewers get artifacts they can understand at a glance, and product owners get confidence that each merge moves the system forward instead of opening a hole. By making Stylus execution visible and comparable, the project gives Arbitrum builders a practical foundation for reliability at scale and a path to optimize without guesswork.
-What innovation or value will your project bring to Arbitrum? What previously unaddressed problems is it solving? Is the project introducing genuinely new mechanisms.
+### Installation
 
-Innovation and value:
+```bash
+git clone https://github.com/Timi16/stylus-trace.git
+cd stylus-trace
+cargo build --release
+```
 
-Stylus Trace Studio gives Arbitrum developers a clear, Stylus aware observability layer. It turns debug_traceTransaction with stylusTracer into visual flamegraphs, simple before and after comparisons, and CI checks that stop performance and cost regressions before they ship. Teams get a truthful picture of WASM to EVM hot paths and HostIO usage, all generated locally with the Nitro dev node, with no keys, no paid RPC, and no backend.
+The binary will be at `./target/release/stylus-trace`.
 
-Previously unaddressed problems:
+---
 
-Developers lack a transaction level performance view specific to Stylus. Current options focus on step by step replay or generic EVM views that miss WASM boundaries and HostIO behavior. This leaves guesswork around cost spikes and hidden bottlenecks. Stylus Trace Studio fills the gap by aggregating execution data into visuals that people can read quickly and by automating regression checks in CI so issues are caught early without expensive rounds on live networks.
+## 📋 Complete Testing Guide
 
-Genuinely new mechanisms:
+### Step 1: Start Nitro Dev Node
 
-Stylus specific flamegraphs and side by side comparisons that highlight HostIO hotspots and cross VM execution.
+```bash
+# Clone the Nitro dev node repository
+git clone https://github.com/OffchainLabs/nitro-devnode.git
+cd nitro-devnode
 
-a CI ready workflow that starts the Nitro dev node, runs a scripted transaction, produces reports, and fails pull requests when agreed thresholds are exceeded.
-
-best effort source hints when debug info is present while still producing useful profiles when it is not.
-
-Together these pieces create a practical standard for Stylus observability on Arbitrum. They lower iteration cost, improve reliability, and raise developer confidence across the ecosystem.
-
-What is the current stage of your project.
-
-Ideation/research
-
-Do you have a target audience? If so, which one.
-
-Developers building on Arbitrum with Stylus and Solidity who need clear performance and cost visibility during development and review
-
-Protocol and dApp teams working on DeFi, gaming, and infra that run mixed WASM and EVM logic
-
-Performance and reliability engineers who maintain CI pipelines and enforce budgets on HostIO and latency
-
-Security and audit teams that want readable execution evidence to support findings
-
-Orbit chain builders who need local, repeatable profiling for custom chains
-
-DevRel and education groups that teach Stylus and need simple, visual examples for workshops and docs
-
-Do you know about any comparable protocol, event, game, tool or project within the Arbitrum ecosystem.
-
-Yes. There are adjacent tools and they serve different needs. None convert Stylus stylusTracer output into Stylus-aware flamegraphs with before and after diffs and CI regression gating.
-
-cargo stylus replay
-Official step by step debugging with GDB or LLDB. Logic inspection only. No aggregate performance view or CI thresholds.
-
-Nitro dev node
-Local Arbitrum node and trace endpoints. Provides the environment. Does not visualize traces or produce reports.
-
-OpenZeppelin Motsu and Stylus test helpers
-Rust unit testing and utilities. Contract correctness focus. Not transaction level performance profiling.
-
-Remix plugin for Stylus and the Stylus playground
-Editor and learning tools. Helpful for authoring and quick deploys. Not trace ingestion or analysis.
-
-VS Code Stylus extensions
-Editing ergonomics. No tracing or profiling.
-
-Arbiscan debug and VM trace views
-Explorer introspection for EVM. Limited or no Stylus HostIO visibility and no flamegraphs.
-
-General EVM debuggers such as Tenderly
-Great for Solidity and EVM traces. Not Stylus specific and no WASM to EVM hotpath profiling.
-
-Recently funded local environment patches
-Add native Arbitrum precompiles and deposit transaction support to Hardhat and Foundry. Improve local correctness. Do not turn Stylus traces into visuals or CI checks.
-
-Overall, good building blocks exist. There is no public tool that ingests Stylus stylusTracer traces and outputs readable flamegraphs and diff reports while enforcing performance budgets in CI. That is the gap this project fills.
-
-Have you received a grant from the DAO, Foundation, or any Arbitrum ecosystem related program or conducted any IRL like a hackathon or workshop.
-
-Yes. We received a grant in the last season which birthed the "Arbitrum Creative Hub". We surpassed our KPIs, collaborated closely with key stakeholders in Arbitrum during our hackathon, we also produced 20+ robust testnet ready Stylus powered applications.
-
-Kindly check full report here:
-https://forum.arbitrum.foundation/t/arbitrum-creative-hub-final-report/29082
-
-Have you received a grant from any other entity in other blockchains that are not Arbitrum.
-
-Yes. We have received grant from NEAR and Solana.
-
-What is the idea/project for which you are applying for a grant.
-
-Stylus Trace Studio gives Arbitrum developers a practical way to see how Stylus transactions actually execute. Stylus adds a second virtual machine (Wasm) alongside the EVM so teams can write high-performance contracts in Rust or C while staying interoperable with Solidity; this multi-VM power also creates blind spots when a transaction is slow or costly because raw traces are hard to interpret at a glance. Our tool consumes the Nitro node’s native stylusTracer (via debug_traceTransaction) and converts that JSON into readable flamegraphs, concise summaries, and “before vs after” diffs that highlight HostIO hot paths and cross-VM bottlenecks. It complements the official cargo-stylus replay flow for step-through debugging by adding aggregate, CI-friendly observability. Teams can run everything locally on the Nitro dev node to avoid paid tracing plans.
-
-Concretely, the project has three parts. A CLI pulls a Stylus trace from a local Nitro dev node or a tracing-enabled RPC and aggregates HostIO events and VM boundaries into SVG flamegraphs plus a JSON report with the top hot paths and HostIO event counts (including storage-related HostIO when aArbitrum Docsvailable). A static web viewer opens those files for zoom, search, and side-by-side diffs. A GitHub Action starts the Nitro dev node inside CI, replays a scripted transaction, produces the reports, and fails the pull request when thresholds are exceeded so performance and cost regressions are caught before testnet or mainnet. This replaces manual JSON inspection with artifacts reviewers can act on, and it aligns with how Arbitrum recommends working with traces today.
-
-Implementation plan:
-
-Trace capture and schema
-Default capture path is local Nitro dev node. The CLI connects to the node and calls debug_traceTransaction with {"tracer":"stylusTracer"} to obtain the raw JSON; for users with a tracing provider, the CLI can point at that RPC as well. We will version the parser against the documented stylusTracer fields and smoke-test on the dev node plus at least one public provider each release. (Note: many providers gate debug_* behind paid tiers, which is why we default to the dev node.)
-
-Aggregation and profiling
-The CLI converts HostIO records and WASM↔EVM boundaries into collapsed stacks with weights, then renders SVG flamegraphs and emits a JSON summary of top hot paths and HostIO categories. Where builds include debug symbols, we surface best-effort source hints for file or function; when symbols are absent, profiles still label modules and HostIO categories so they remain useful. This creates an aggregate view that step-through debuggers and generic EVM explorers do not provide for Stylus execution.
-
-Diff and regression checks
-We normalize two profiles from the same scripted run, compute deltas, and render a diff that highlights increases and decreases. The GitHub Action runs against the local Nitro dev node, executes the scripted transaction or integration test, generates profiles, uploads them as CI artifacts, and enforces thresholds on totals like HostIO so teams block regressions in review without needing keys or paid endpoints.
-
-Developer experience and documentation
-We will publish a starter repo with a small Stylus contract and a Solidity caller that demonstrates the full flow end-to-end, plus documentation that includes Nitro dev-node quick start, a CI cookbook, and guidance on when to switch to cargo-stylus replay for step-through debugging. We will also point to OpenZeppelin Motsu for Rust unit tests, clarifying how unit-level correctness complements transaction-level profiling.
-
-Outline the major deliverables you will obtain with this grant.
-
-Milestone 1 Trace ingest and flamegraph:
-CLI that fetches stylusTracer output via debug_traceTransaction from the Nitro dev node or a tracing RPC
-
-Parser and versioned JSON schema for the profile summary output
-
-SVG flamegraph generation
-
-Cross platform builds and release packaging
-
-Unit tests plus an end to end smoke test using a sample transaction
-
-Milestone 2 Diff engine and CI Action
-Before and after diff generation plus a machine readable diff report schema
-
-Threshold configuration for regression gating
-
-GitHub Action that starts a Nitro dev node in CI, runs a scripted transaction or test, generates profile artifacts, uploads them, and fails PRs on regression
-
-Example workflow files and caching guidance
-
-Milestone 3 Static viewer and source hints
-Static web viewer that opens profiles locally with zoom and search
-
-Side by side diff view
-
-Best effort source hints when debug info is present and graceful fallback labels when not
-
-Hosted static demo build and exportable bundle
-
-Milestone 4 Docs, starter repo, templates, demo
-Starter repository with a Stylus contract, a Solidity caller, and a green CI pipeline producing flamegraph artifacts
-
-Quickstart docs, CI cookbook, troubleshooting, and provider notes
-
-At least one education template or lesson plan using the tool
-
-At least one Orbit oriented template example using a custom chain ID and RPC
-
-One short demo video and one tutorial post showing the full workflow
-
-Milestone 5 Post release support and ecosystem enablement
-Six months of post release support as defined below
-
-Monthly smoke test logs
-
-At least three workshops or posts demonstrating the tool during the support window
+# Start the dev node (requires Docker)
+./run-dev-node.sh
+```
+
+**Note:** This script starts a local Arbitrum Nitro node on `http://localhost:8547` with the debug API enabled.
+
+Verify it's running:
+```bash
+curl -X POST http://localhost:8547 \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
+```
+
+### Step 2: Deploy a Stylus Contract
+
+```bash
+# Create a new Stylus project
+cargo stylus new my-contract
+cd my-contract
+
+# Example contract (src/lib.rs):
+cat > src/lib.rs << 'EOF'
+#![cfg_attr(not(any(feature = "export-abi", test)), no_main)]
+extern crate alloc;
+
+use stylus_sdk::alloy_primitives::U256;
+use stylus_sdk::prelude::*;
+
+sol_storage! {
+    #[entrypoint]
+    pub struct Counter {
+        uint256 value;
+    }
+}
+
+#[public]
+impl Counter {
+    pub fn add(&mut self, left: U256, right: U256) -> U256 {
+        let sum = left + right;
+        self.value.set(sum);
+        sum
+    }
+
+    pub fn get_value(&self) -> U256 {
+        self.value.get()
+    }
+}
+EOF
+
+# Deploy to local dev node
+cargo stylus deploy \
+  --private-key 0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659 \
+  --endpoint http://localhost:8547
+```
+
+**Save the contract address from the output!**
+
+Example output:
+```
+deployed code at address: 0x525c2aba45f66987217323e8a05ea400c65d06dc
+```
+
+### Step 3: Execute a Transaction
+
+```bash
+# Set your contract address
+CONTRACT_ADDRESS="0x525c2aba45f66987217323e8a05ea400c65d06dc"
+
+# Call the add function
+TX_HASH=$(cast send $CONTRACT_ADDRESS \
+  "add(uint256,uint256)" 42 58 \
+  --private-key 0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659 \
+  --rpc-url http://localhost:8547 \
+  --json | jq -r '.transactionHash')
+
+echo "Transaction hash: $TX_HASH"
+
+# Wait for confirmation
+sleep 2
+```
+
+### Step 4: Generate Profile & Flamegraph
+
+```bash
+cd /path/to/stylus-trace-studio
+
+./target/release/stylus-trace capture \
+  --rpc http://localhost:8547 \
+  --tx $TX_HASH \
+  --output profile.json \
+  --flamegraph flamegraph.svg \
+  --summary
+```
+
+**Expected output:**
+```
+[INFO] Starting capture for transaction: 0x51a2d1e5...
+[INFO] Step 1/6: Fetching trace from RPC...
+[INFO] Step 2/6: Parsing trace data...
+[INFO] Step 3/6: Building collapsed stacks...
+[INFO] Gas distribution: Total: 22108 gas | Stacks: 6 | Mean: 3684 | Median: 1
+[INFO] Step 4/6: Calculating top 20 hot paths...
+[INFO] Step 5/6: Generating flamegraph...
+[INFO] Flamegraph generated successfully (19047 bytes)
+[INFO] Step 6/6: Writing output files...
+[INFO] ✓ Profile written to: profile.json
+[INFO] ✓ Flamegraph written to: flamegraph.svg
+
+================================================================================
+PROFILE SUMMARY
+================================================================================
+Transaction: 0x51a2d1e5feda3def9455b6ec50a5a77f6b570aa942209432d4ac0bcdc7def4a6
+Total Gas:   71136
+HostIO Calls: 0
+Unique Stacks: 6
+
+Top Gas Consumers:
+────────────────────────────────────────────────────────────────────────────────
+  1.      22106 gas | call;SSTORE
+  2.          1 gas | call;CALLDATACOPY
+  3.          1 gas | call;CALLVALUE
+  4.          0 gas | call;POP
+  5.          0 gas | call;RETURN
+  6.          0 gas | call;SLOAD
+================================================================================
+[INFO] Capture completed in 0.04s
+```
+
+### Step 5: View the Flamegraph
+
+Open the SVG in a browser for **interactive features** (hover, zoom, search):
+
+```bash
+# macOS
+open flamegraph.svg
+
+# Linux
+xdg-open flamegraph.svg
+
+# Or specify a browser
+open -a "Google Chrome" flamegraph.svg
+```
+
+**What you'll see:**
+- Hover over boxes to see gas cost and percentage
+- Click boxes to zoom in
+- Use search (top-right) to highlight specific operations
+- Wider boxes = more gas consumed
+
+---
+
+## 📖 CLI Command Reference
+
+### Main Commands
+
+```bash
+./target/release/stylus-trace --help
+```
+
+**Output:**
+```
+Performance profiling and flamegraph generation for Arbitrum Stylus transactions
+
+Usage: stylus-trace [OPTIONS] <COMMAND>
+
+Commands:
+  capture   Capture and profile a transaction
+  validate  Validate a profile JSON file
+  schema    Display schema information
+  version   Display version information
+  help      Print this message or the help of the given subcommand(s)
+
+Options:
+  -v, --verbose  Enable verbose logging
+  -h, --help     Print help
+  -V, --version  Print version
+```
+
+### 1. Capture Command
+
+Profile a transaction and generate outputs:
+
+```bash
+./target/release/stylus-trace capture \
+  --rpc <RPC_URL> \
+  --tx <TRANSACTION_HASH> \
+  --output <OUTPUT_JSON> \
+  --flamegraph <OUTPUT_SVG> \
+  --summary
+```
+
+**Options:**
+- `--rpc <URL>` - RPC endpoint (default: `http://localhost:8547`)
+- `--tx <HASH>` - Transaction hash to profile (required)
+- `--output <PATH>` - Output path for JSON profile (default: `profile.json`)
+- `--flamegraph <PATH>` - Output path for SVG flamegraph (optional)
+- `--top-paths <N>` - Number of top hot paths to include (default: 20)
+- `--title <TITLE>` - Custom flamegraph title
+- `--palette <PALETTE>` - Color scheme: `hot`, `mem`, `io`, `java`, `consistent` (default: `hot`)
+- `--width <PIXELS>` - Flamegraph width in pixels (default: 1200)
+- `--summary` - Print text summary to stdout
+
+**Examples:**
+
+Basic capture:
+```bash
+./target/release/stylus-trace capture \
+  --rpc http://localhost:8547 \
+  --tx 0xabc123... \
+  --output my-profile.json \
+  --flamegraph my-flamegraph.svg
+```
+
+With custom settings:
+```bash
+./target/release/stylus-trace capture \
+  --rpc http://localhost:8547 \
+  --tx 0xabc123... \
+  --output profile.json \
+  --flamegraph flamegraph.svg \
+  --title "My Contract Performance" \
+  --palette mem \
+  --width 1600 \
+  --top-paths 50 \
+  --summary
+```
+
+Verbose logging:
+```bash
+./target/release/stylus-trace -v capture \
+  --rpc http://localhost:8547 \
+  --tx 0xabc123... \
+  --output profile.json \
+  --flamegraph flamegraph.svg
+```
+
+### 2. Validate Command
+
+Validate a profile JSON file:
+
+```bash
+./target/release/stylus-trace validate --file profile.json
+```
+
+**Output:**
+```
+Validating profile: profile.json
+✓ Valid profile JSON
+  Version: 1.0.0
+  Transaction: 0x51a2d1e5feda3def9455b6ec50a5a77f6b570aa942209432d4ac0bcdc7def4a6
+  Total Gas: 71136
+  HostIO Calls: 0
+  Hot Paths: 6
+```
+
+### 3. Schema Command
+
+Display the profile JSON schema:
+
+```bash
+./target/release/stylus-trace schema
+```
+
+With details:
+```bash
+./target/release/stylus-trace schema --show
+```
+
+### 4. Version Command
+
+Display version information:
+
+```bash
+./target/release/stylus-trace version
+```
+
+---
+
+## 📊 Understanding the Output
+
+### Profile JSON (`profile.json`)
+
+```json
+{
+  "version": "1.0.0",
+  "transaction_hash": "0x51a2d1e5...",
+  "total_gas": 71136,
+  "hostio_summary": {
+    "total_calls": 0,
+    "by_type": {},
+    "total_hostio_gas": 0
+  },
+  "hot_paths": [
+    {
+      "stack": "call;SSTORE",
+      "gas": 22106,
+      "percentage": 31.07,
+      "source_hint": null
+    }
+  ],
+  "generated_at": "2026-01-20T02:41:16.123Z"
+}
+```
+
+**Fields:**
+- `version` - Schema version
+- `transaction_hash` - Profiled transaction
+- `total_gas` - Total gas used
+- `hostio_summary` - HostIO call statistics (Milestone 2)
+- `hot_paths` - Top gas-consuming execution paths
+- `generated_at` - Profile generation timestamp
+
+### Flamegraph SVG
+
+The flamegraph visualizes gas consumption:
+- **X-axis (width)** - Proportion of gas consumed
+- **Y-axis (height)** - Call stack depth
+- **Colors** - Different operations/modules
+- **Interactive** - Hover for details, click to zoom
+
+**Reading the flamegraph:**
+1. **Root at bottom** - Entry point of execution
+2. **Stacks build up** - Function calls build vertically
+3. **Width = gas cost** - Wider boxes consumed more gas
+4. **Hot paths** - Widest boxes at each level are optimization targets
+
+---
+
+## 🔧 Troubleshooting
+
+### Issue: "Connection refused" or RPC errors
+
+**Solution:** Ensure Nitro dev node is running:
+```bash
+cd nitro-devnode
+./run-dev-node.sh
+```
+
+Check if port 8547 is accessible:
+```bash
+curl http://localhost:8547
+```
+
+### Issue: "Transaction not found"
+
+**Solution:** 
+- Wait a few seconds after sending the transaction
+- Verify the transaction hash is correct
+- Check the transaction was mined:
+  ```bash
+  cast receipt $TX_HASH --rpc-url http://localhost:8547
+  ```
+
+### Issue: "Empty stack data" or "No stack counts found"
+
+**Causes:**
+1. **Wrong transaction type** - Deployment/activation transactions have no execution trace
+2. **No gas costs** - Some operations may have 0 gas cost
+
+**Solution:**
+- Only profile **function call transactions**, not deployments
+- Ensure you're calling an actual contract function:
+  ```bash
+  # ✅ Good - function call
+  cast send $CONTRACT "add(uint256,uint256)" 42 58 ...
+  
+  # ❌ Bad - deployment transaction
+  cargo stylus deploy ...
+  ```
+
+### Issue: Flamegraph looks too simple
+
+**Explanation:** Simple contracts produce simple flamegraphs. A contract that only does one storage write will show one dominant operation.
+
+**Solution:** Test with more complex contracts that:
+- Make multiple storage operations
+- Call other contracts
+- Perform loops or complex computations
+
+### Issue: "Invalid hex" or "Transaction hash must be 32 bytes"
+
+**Solution:** Ensure the transaction hash:
+- Is 64 hex characters (32 bytes)
+- Includes `0x` prefix (or is exactly 64 chars without it)
+- Contains only valid hex characters (0-9, a-f)
+
+---
+
+## 🎯 Best Practices
+
+### 1. Profile Function Calls, Not Deployments
+
+```bash
+# ✅ Profile this
+TX=$(cast send $CONTRACT "myFunction()" ... --json | jq -r '.transactionHash')
+./target/release/stylus-trace capture --tx $TX ...
+
+# ❌ Don't profile this
+DEPLOY_TX=$(cargo stylus deploy ... | grep "deployment tx hash")
+./target/release/stylus-trace capture --tx $DEPLOY_TX ...  # Will fail!
+```
+
+### 2. Use Meaningful Titles
+
+```bash
+./target/release/stylus-trace capture \
+  --tx $TX \
+  --title "TokenSwap.swap() - Before Optimization" \
+  --output before.json \
+  --flamegraph before.svg
+```
+
+### 3. Compare Before/After (Milestone 2 Preview)
+
+```bash
+# Profile original version
+./target/release/stylus-trace capture --tx $TX1 --output before.json --flamegraph before.svg
+
+# Make changes, redeploy, run same transaction
+./target/release/stylus-trace capture --tx $TX2 --output after.json --flamegraph after.svg
+
+# Compare visually by opening both flamegraphs
+open before.svg after.svg
+```
+
+### 4. Save Profiles for CI/Review
+
+```bash
+# Organize by git commit
+mkdir -p profiles/$(git rev-parse --short HEAD)
+./target/release/stylus-trace capture \
+  --tx $TX \
+  --output profiles/$(git rev-parse --short HEAD)/profile.json \
+  --flamegraph profiles/$(git rev-parse --short HEAD)/flamegraph.svg
+```
+
+---
+
+## 🧪 Example Workflows
+
+### Basic Profiling
+
+```bash
+#!/bin/bash
+set -e
+
+# 1. Deploy contract
+cd my-stylus-contract
+CONTRACT=$(cargo stylus deploy \
+  --private-key $PRIVATE_KEY \
+  --endpoint http://localhost:8547 | \
+  grep "deployed code at address:" | \
+  awk '{print $NF}')
+
+# 2. Execute transaction
+TX=$(cast send $CONTRACT \
+  "myFunction(uint256)" 42 \
+  --private-key $PRIVATE_KEY \
+  --rpc-url http://localhost:8547 \
+  --json | jq -r '.transactionHash')
+
+# 3. Profile
+cd ../stylus-trace-studio
+./target/release/stylus-trace capture \
+  --rpc http://localhost:8547 \
+  --tx $TX \
+  --output profile.json \
+  --flamegraph flamegraph.svg \
+  --summary
+
+# 4. View
+open flamegraph.svg
+```
+
+### Batch Profiling
+
+```bash
+#!/bin/bash
+# Profile multiple transactions
+
+TRANSACTIONS=(
+  "0xabc123..."
+  "0xdef456..."
+  "0x789abc..."
+)
+
+for i in "${!TRANSACTIONS[@]}"; do
+  ./target/release/stylus-trace capture \
+    --rpc http://localhost:8547 \
+    --tx "${TRANSACTIONS[$i]}" \
+    --output "profile-$i.json" \
+    --flamegraph "flamegraph-$i.svg" \
+    --title "Transaction $i"
+done
+```
+
+---
+
+## 📚 Additional Resources
+
+- [Arbitrum Stylus Documentation](https://docs.arbitrum.io/stylus/stylus-gentle-introduction)
+- [Nitro Dev Node](https://github.com/OffchainLabs/nitro-devnode)
+- [Cargo Stylus](https://github.com/OffchainLabs/cargo-stylus)
+- [Flamegraph Visualization](https://www.brendangregg.com/flamegraphs.html)
+
+---
+
+## 🤝 Contributing
+
+Contributions welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+---
+
+## 📄 License
+
+[MIT License](LICENSE)
+
+---
+
+## 🙋 Support
+
+- **Issues**: [GitHub Issues](https://github.com/Timi16/stylus-trace/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/Timi16/stylus-trace/discussions)
+
+
+---
+
+**Built with ❤️ for the Arbitrum ecosystem**

@@ -1,0 +1,43 @@
+{
+  "version": "1.0.0",
+  "transaction_hash": "0x51a2d1e5feda3def9455b6ec50a5a77f6b570aa942209432d4ac0bcdc7def4a6",
+  "total_gas": 71136,
+  "hostio_summary": {
+    "total_calls": 0,
+    "by_type": {},
+    "total_hostio_gas": 0
+  },
+  "hot_paths": [
+    {
+      "stack": "call;SSTORE",
+      "gas": 22106,
+      "percentage": 31.075686009896536
+    },
+    {
+      "stack": "call;CALLDATACOPY",
+      "gas": 1,
+      "percentage": 0.0014057579847053532
+    },
+    {
+      "stack": "call;CALLVALUE",
+      "gas": 1,
+      "percentage": 0.0014057579847053532
+    },
+    {
+      "stack": "call;POP",
+      "gas": 0,
+      "percentage": 0.0
+    },
+    {
+      "stack": "call;RETURN",
+      "gas": 0,
+      "percentage": 0.0
+    },
+    {
+      "stack": "call;SLOAD",
+      "gas": 0,
+      "percentage": 0.0
+    }
+  ],
+  "generated_at": "2026-01-20T02:41:16.261900+00:00"
+}
