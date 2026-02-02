@@ -6,20 +6,13 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use env_logger::Env;
-use log::error;
 use std::path::PathBuf;
 
-mod aggregator;
 mod commands;
-mod flamegraph;
-mod output;
-mod parser;
-mod rpc;
-mod utils;
 
 use commands::{execute_capture, validate_args, CaptureArgs};
-use flamegraph::FlamegraphConfig;
-use utils::config::SCHEMA_VERSION;
+use stylus_trace_studio::flamegraph::FlamegraphConfig;
+use stylus_trace_studio::utils::config::SCHEMA_VERSION;
 
 /// Stylus Trace Studio - Performance profiling for Arbitrum Stylus
 #[derive(Parser, Debug)]
@@ -170,7 +163,7 @@ fn main() -> Result<()> {
 ///
 /// **Private** - internal command implementation
 fn validate_profile_file(file_path: PathBuf) -> Result<()> {
-    use output::read_profile;
+    use stylus_trace_studio::output::read_profile;
     
     println!("Validating profile: {}", file_path.display());
     

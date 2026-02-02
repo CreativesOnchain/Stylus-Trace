@@ -5,4 +5,3 @@ pub mod types;
 
 // Re-export main types
 pub use client::RpcClient;
-pub use types::{RawTraceData, JsonRpcRequest, JsonRpcResponse};

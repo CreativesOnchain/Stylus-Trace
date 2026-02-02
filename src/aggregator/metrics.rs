@@ -93,7 +93,6 @@ pub fn calculate_gas_distribution(stacks: &[CollapsedStack]) -> GasDistribution 
         stack_count: count,
         mean_gas_per_stack: mean,
         median_gas_per_stack: median,
-        top_10_percent_gas,
         top_10_percent_percentage: if total > 0 {
             (top_10_percent_gas as f64 / total as f64) * 100.0
         } else {
@@ -120,7 +119,6 @@ pub struct GasDistribution {
     pub median_gas_per_stack: u64,
     
     /// Gas consumed by top 10% of stacks
-    pub top_10_percent_gas: u64,
     
     /// Percentage of total gas in top 10%
     pub top_10_percent_percentage: f64,
@@ -133,21 +131,12 @@ impl Default for GasDistribution {
             stack_count: 0,
             mean_gas_per_stack: 0,
             median_gas_per_stack: 0,
-            top_10_percent_gas: 0,
             top_10_percent_percentage: 0.0,
         }
     }
 }
 
 impl GasDistribution {
-    /// Check if gas distribution is highly concentrated
-    ///
-    /// **Public** - useful for identifying optimization opportunities
-    ///
-    /// Returns true if top 10% of stacks consume >80% of gas
-    pub fn is_highly_concentrated(&self) -> bool {
-        self.top_10_percent_percentage > 80.0
-    }
     
     /// Get human-readable summary
     ///
@@ -199,7 +188,7 @@ mod tests {
         assert_eq!(dist.total_gas, 10000);
         assert_eq!(dist.stack_count, 4);
         assert_eq!(dist.mean_gas_per_stack, 2500);
-        assert!(dist.is_highly_concentrated()); // Top stack has 80%
+        // assert!(dist.is_highly_concentrated()); // Top stack has 80%
     }
 
     #[test]

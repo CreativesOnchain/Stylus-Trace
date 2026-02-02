@@ -30,37 +30,8 @@ impl CollapsedStack {
         Self { stack, weight }
     }
     
-    /// Format as the standard collapsed stack line
-    ///
-    /// **Public** - used when writing to file or passing to inferno
-    ///
-    /// Format: "stack weight"
-    /// Example: "main;execute;storage_read 1000"
-    pub fn to_line(&self) -> String {
-        format!("{} {}", self.stack, self.weight)
-    }
 }
 
-/// Stack frame representing a function call
-///
-/// **Private** - internal representation during stack building
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct StackFrame {
-    /// Function or operation name
-    name: String,
-    
-    /// Depth in call stack (0 = root)
-    depth: u32,
-}
-
-impl StackFrame {
-    fn new(name: impl Into<String>, depth: u32) -> Self {
-        Self {
-            name: name.into(),
-            depth,
-        }
-    }
-}
 
 /// Build collapsed stacks from parsed trace
 ///
@@ -137,37 +108,6 @@ pub fn build_collapsed_stacks(parsed_trace: &ParsedTrace) -> Vec<CollapsedStack>
     stacks
 }
 
-/// Update call stack based on current depth
-///
-/// **Private** - internal stack management
-fn update_call_stack(call_stack: &mut Vec<String>, new_depth: usize) {
-    // Ensure call stack has correct depth
-    if new_depth < call_stack.len() {
-        // We've returned from function(s), pop the stack
-        call_stack.truncate(new_depth);
-    } else if new_depth > call_stack.len() {
-        // We've entered new function(s), add placeholders
-        while call_stack.len() < new_depth {
-            call_stack.push(format!("frame_{}", call_stack.len()));
-        }
-    }
-    // If equal, we're at the same depth (sequential operations)
-}
-
-/// Build semicolon-separated stack string
-///
-/// **Private** - internal string building
-fn build_stack_string(call_stack: &[String], operation: &str) -> String {
-    if call_stack.is_empty() {
-        // Root level
-        operation.to_string()
-    } else {
-        // Build: parent;child;grandchild;operation
-        let mut stack_parts = call_stack.to_vec();
-        stack_parts.push(operation.to_string());
-        stack_parts.join(";")
-    }
-}
 
 /// Add HostIO events as separate stacks
 ///
@@ -220,79 +160,20 @@ fn add_hostio_stacks(
     }
 }
 
-/// Merge similar stacks for cleaner flamegraphs
-///
-/// **Public** - optional post-processing
-///
-/// This combines stacks that differ only in minor details,
-/// reducing flamegraph complexity for large traces.
-///
-/// # Arguments
-/// * `stacks` - Original collapsed stacks
-/// * `threshold` - Minimum weight to keep (stacks below this are merged into "other")
-///
-/// # Returns
-/// Merged stacks
-pub fn merge_small_stacks(stacks: Vec<CollapsedStack>, threshold: u64) -> Vec<CollapsedStack> {
-    let mut merged = Vec::new();
-    let mut other_weight = 0u64;
-    
-    for stack in stacks {
-        if stack.weight >= threshold {
-            merged.push(stack);
-        } else {
-            other_weight += stack.weight;
-        }
-    }
-    
-    // Add merged "other" stack if it has weight
-    if other_weight > 0 {
-        merged.push(CollapsedStack::new("other".to_string(), other_weight));
-    }
-    
-    merged
-}
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::parser::hostio::HostIoStats;
-
+    // use super::*;
+/*
     #[test]
     fn test_collapsed_stack_to_line() {
         let stack = CollapsedStack::new("main;execute;storage_read".to_string(), 1000);
         assert_eq!(stack.to_line(), "main;execute;storage_read 1000");
     }
+*/
 
-    #[test]
-    fn test_build_stack_string() {
-        let call_stack = vec!["main".to_string(), "execute".to_string()];
-        let result = build_stack_string(&call_stack, "storage_read");
-        assert_eq!(result, "main;execute;storage_read");
-    }
 
-    #[test]
-    fn test_build_stack_string_empty() {
-        let call_stack: Vec<String> = vec![];
-        let result = build_stack_string(&call_stack, "main");
-        assert_eq!(result, "main");
-    }
-
-    #[test]
-    fn test_update_call_stack_deeper() {
-        let mut stack = vec!["main".to_string()];
-        update_call_stack(&mut stack, 3);
-        assert_eq!(stack.len(), 3);
-    }
-
-    #[test]
-    fn test_update_call_stack_shallower() {
-        let mut stack = vec!["main".to_string(), "child".to_string(), "grandchild".to_string()];
-        update_call_stack(&mut stack, 1);
-        assert_eq!(stack.len(), 1);
-        assert_eq!(stack[0], "main");
-    }
-
+/*
     #[test]
     fn test_merge_small_stacks() {
         let stacks = vec![
@@ -310,4 +191,5 @@ mod tests {
         let other = merged.iter().find(|s| s.stack == "other").unwrap();
         assert_eq!(other.weight, 25);
     }
+*/
 }

@@ -16,7 +16,6 @@ use std::collections::HashMap;
 pub struct FlamegraphConfig {
     pub title: String,
     pub width: usize,
-    pub min_width: f64,
 }
 
 impl Default for FlamegraphConfig {
@@ -24,7 +23,6 @@ impl Default for FlamegraphConfig {
         Self {
             title: "Stylus Transaction Profile".to_string(),
             width: 1200,
-            min_width: 0.1,
         }
     }
 }
@@ -124,8 +122,6 @@ pub fn generate_flamegraph(
         width as f64,
         &mut svg_content,
         height_per_level,
-        root.value,
-        max_depth,
         graph_height,
     );
 
@@ -145,7 +141,7 @@ fn calculate_max_depth(node: &Node) -> usize {
     let max_child_depth = node
         .children
         .values()
-        .map(|child| calculate_max_depth(child))
+        .map(calculate_max_depth)
         .max()
         .unwrap_or(0);
     max_child_depth + 1
@@ -158,8 +154,6 @@ fn render_node(
     w: f64,
     out: &mut String,
     h: usize,
-    _total_root_val: u64,
-    _max_depth: usize,
     graph_height: usize,
 ) {
     if w < 0.5 {
@@ -227,17 +221,15 @@ fn render_node(
 
     for child in children_vec {
         let child_w = (child.value as f64 / node.value as f64) * w;
-        render_node(
-            child,
-            level + 1,
-            current_x,
-            child_w,
-            out,
-            h,
-            _total_root_val,
-            _max_depth,
-            graph_height,
-        );
+            render_node(
+                child,
+                level + 1,
+                current_x,
+                child_w,
+                out,
+                h,
+                graph_height,
+            );
         current_x += child_w;
     }
 }
@@ -250,7 +242,7 @@ fn render_legend(out: &mut String, graph_height: usize) {
         legend_y
     ));
 
-    let items = vec![
+    let items = [
         ("Flush", "rgb(220, 20, 60)"),
         ("Load", "rgb(255, 140, 0)"),
         ("Cache", "rgb(255, 165, 0)"),

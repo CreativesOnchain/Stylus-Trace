@@ -8,12 +8,11 @@
 //! 5. Calculates metrics
 //! 6. Writes output files
 
-use crate::aggregator::{build_collapsed_stacks, calculate_hot_paths, calculate_gas_distribution};
-use crate::flamegraph::{generate_flamegraph, generate_text_summary, FlamegraphConfig};
-use crate::output::{write_profile, write_svg};
-use crate::parser::{parse_trace, to_profile};
-use crate::rpc::RpcClient;
-use crate::utils::config::SCHEMA_VERSION;
+use stylus_trace_studio::aggregator::{build_collapsed_stacks, calculate_hot_paths, calculate_gas_distribution};
+use stylus_trace_studio::flamegraph::{generate_flamegraph, generate_text_summary, FlamegraphConfig};
+use stylus_trace_studio::output::{write_profile, write_svg};
+use stylus_trace_studio::parser::{parse_trace, to_profile};
+use stylus_trace_studio::rpc::RpcClient;
 use anyhow::{Context, Result};
 use log::{info, debug};
 use std::path::PathBuf;
@@ -246,16 +245,9 @@ pub fn validate_args(args: &CaptureArgs) -> Result<()> {
     Ok(())
 }
 
-/// Quick capture with defaults (convenience function)
-///
-/// **Public** - simplified API for common use case
-///
-/// # Arguments
-/// * `rpc_url` - RPC endpoint
-/// * `tx_hash` - Transaction hash
-///
-/// # Returns
-/// Paths to generated files (JSON, SVG)
+// /// Quick capture with defaults (convenience function)
+// ...
+/*
 pub fn quick_capture(rpc_url: &str, tx_hash: &str) -> Result<(PathBuf, PathBuf)> {
     let args = CaptureArgs {
         rpc_url: rpc_url.to_string(),
@@ -272,6 +264,7 @@ pub fn quick_capture(rpc_url: &str, tx_hash: &str) -> Result<(PathBuf, PathBuf)>
     
     Ok((args.output_json, args.output_svg.unwrap()))
 }
+*/
 
 #[cfg(test)]
 mod tests {

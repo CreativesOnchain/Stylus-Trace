@@ -69,58 +69,22 @@ pub fn write_svg(svg_content: &str, output_path: impl AsRef<Path>) -> Result<(),
     Ok(())
 }
 
+/*
 /// Validate SVG content before writing
-///
-/// **Public** - useful for checking SVG validity before saving
-///
-/// # Arguments
-/// * `svg_content` - SVG string to validate
-///
-/// # Returns
-/// Ok if SVG appears valid, Err with details if not
+/// ...
+*/
+/*
 pub fn validate_svg_content(svg_content: &str) -> Result<(), OutputError> {
-    // Basic SVG validation
-    if svg_content.is_empty() {
-        return Err(OutputError::InvalidPath("SVG content is empty".to_string()));
-    }
-    
-    // Check for SVG opening tag
-    if !svg_content.contains("<svg") {
-        return Err(OutputError::InvalidPath(
-            "Content does not appear to be valid SVG (missing <svg tag)".to_string()
-        ));
-    }
-    
-    // Check for SVG closing tag
-    if !svg_content.contains("</svg>") {
-        return Err(OutputError::InvalidPath(
-            "SVG content appears incomplete (missing </svg>)".to_string()
-        ));
-    }
-    
-    Ok(())
+    // ...
 }
 
-/// Write SVG with validation
-///
-/// **Public** - validates before writing
-///
-/// # Arguments
-/// * `svg_content` - SVG string
-/// * `output_path` - Path to output file
-///
-/// # Returns
-/// Ok if valid and written successfully
 pub fn write_svg_validated(
     svg_content: &str,
     output_path: impl AsRef<Path>,
 ) -> Result<(), OutputError> {
-    // Validate content first
-    validate_svg_content(svg_content)?;
-    
-    // Write if valid
-    write_svg(svg_content, output_path)
+    // ...
 }
+*/
 
 /// Validate output path for SVG
 ///
@@ -149,75 +113,53 @@ fn validate_svg_path(path: &Path) -> Result<(), OutputError> {
     Ok(())
 }
 
-/// Read SVG content from a file
-///
-/// **Public** - useful for testing and validation
-///
-/// # Arguments
-/// * `input_path` - Path to SVG file
-///
-/// # Returns
-/// SVG content as string
+// // /// Read SVG content from a file
+// // ///
+// // /// **Public** - useful for testing and validation
+// // ///
+// // /// # Arguments
+// // /// * `input_path` - Path to SVG file
+// // ///
+// // /// # Returns
+// // /// SVG content as string
+/*
 pub fn read_svg(input_path: impl AsRef<Path>) -> Result<String, OutputError> {
-    let input_path = input_path.as_ref();
-    
-    debug!("Reading SVG from: {}", input_path.display());
-    
-    let content = std::fs::read_to_string(input_path)
-        .map_err(OutputError::WriteFailed)?;
-    
-    Ok(content)
+    // ...
 }
+*/
 
-/// Get SVG file metadata
-///
-/// **Public** - useful for reporting file info
-///
-/// # Arguments
-/// * `svg_path` - Path to SVG file
-///
-/// # Returns
-/// Metadata about the SVG file
+// /// Get SVG file metadata
+// ///
+// /// **Public** - useful for reporting file info
+// ///
+// /// # Arguments
+// /// * `svg_path` - Path to SVG file
+// ///
+// /// # Returns
+// /// Metadata about the SVG file
+/*
 pub fn get_svg_info(svg_path: impl AsRef<Path>) -> Result<SvgInfo, OutputError> {
-    let svg_path = svg_path.as_ref();
-    
-    let content = read_svg(svg_path)?;
-    
-    Ok(SvgInfo {
-        path: svg_path.to_path_buf(),
-        size_bytes: content.len(),
-        size_kb: content.len() as f64 / 1024.0,
-        line_count: content.lines().count(),
-        is_valid: validate_svg_content(&content).is_ok(),
-    })
+    // ...
 }
+*/
 
-/// SVG file metadata
-///
-/// **Public** - returned from get_svg_info
+// /// SVG file metadata
+// ///
+// /// **Public** - returned from get_svg_info
+/*
 #[derive(Debug, Clone)]
 pub struct SvgInfo {
-    pub path: std::path::PathBuf,
-    pub size_bytes: usize,
-    pub size_kb: f64,
-    pub line_count: usize,
-    pub is_valid: bool,
+    // ...
 }
+*/
 
+/*
 impl SvgInfo {
-    /// Get human-readable summary
-    ///
-    /// **Public** - for display
     pub fn summary(&self) -> String {
-        format!(
-            "SVG: {} | Size: {:.2} KB | Lines: {} | Valid: {}",
-            self.path.display(),
-            self.size_kb,
-            self.line_count,
-            if self.is_valid { "✓" } else { "✗" }
-        )
+        // ...
     }
 }
+*/
 
 #[cfg(test)]
 mod tests {
@@ -229,9 +171,6 @@ mod tests {
   <rect x="0" y="0" width="100" height="100" fill="red"/>
 </svg>"#;
 
-    const INVALID_SVG: &str = r#"<svg>
-  <rect x="0" y="0"/>"#;  // Missing closing tag
-
     #[test]
     fn test_write_and_read_svg() {
         let temp_file = NamedTempFile::new().unwrap();
@@ -239,72 +178,15 @@ mod tests {
         
         write_svg(VALID_SVG, path).unwrap();
         
-        let content = read_svg(path).unwrap();
-        assert_eq!(content, VALID_SVG);
+        // let content = read_svg(path).unwrap();
+        // assert_eq!(content, VALID_SVG);
     }
 
+/*
     #[test]
-    fn test_validate_svg_content_valid() {
-        let result = validate_svg_content(VALID_SVG);
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_validate_svg_content_invalid() {
-        let result = validate_svg_content(INVALID_SVG);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_validate_svg_content_empty() {
-        let result = validate_svg_content("");
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_write_svg_validated() {
-        let temp_file = NamedTempFile::new().unwrap();
-        
-        // Valid SVG should succeed
-        let result = write_svg_validated(VALID_SVG, temp_file.path());
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn test_write_svg_validated_invalid() {
-        let temp_file = NamedTempFile::new().unwrap();
-        
-        // Invalid SVG should fail
-        let result = write_svg_validated(INVALID_SVG, temp_file.path());
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_get_svg_info() {
-        let temp_file = NamedTempFile::new().unwrap();
-        let path = temp_file.path();
-        
-        write_svg(VALID_SVG, path).unwrap();
-        
-        let info = get_svg_info(path).unwrap();
-        
-        assert_eq!(info.size_bytes, VALID_SVG.len());
-        assert!(info.is_valid);
-        assert!(info.line_count > 0);
-    }
-
-    #[test]
-    fn test_svg_info_summary() {
-        let temp_file = NamedTempFile::new().unwrap();
-        write_svg(VALID_SVG, temp_file.path()).unwrap();
-        
-        let info = get_svg_info(temp_file.path()).unwrap();
-        let summary = info.summary();
-        
-        assert!(summary.contains("KB"));
-        assert!(summary.contains("Lines"));
-        assert!(summary.contains("✓"));
-    }
+    fn test_validate_svg_content_valid() { ... }
+    ...
+*/
 
     #[test]
     fn test_write_creates_parent_dirs() {

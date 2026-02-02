@@ -16,13 +16,6 @@ use serde::Deserialize;
 /// The exact fields depend on the stylusTracer implementation.
 #[derive(Debug, Clone, Deserialize)]
 pub struct ExecutionStep {
-    /// Program counter / instruction pointer
-    #[serde(default)]
-    pub pc: u64,  
-    
-    /// Gas remaining at this step
-    #[serde(default)]
-    pub gas: u64,
     
     /// Gas cost of this operation
     /// FIXED: Handle both camelCase and snake_case
@@ -239,15 +232,11 @@ pub fn to_profile(
     }
 }
 
+/*
 /// Validate that we can parse a trace (quick check)
-///
-/// **Public** - used by validate command
-///
-/// # Arguments
-/// * `raw_trace` - Raw JSON to validate
-///
-/// # Returns
-/// Ok if trace appears valid, Err with details if not
+...
+*/
+/*
 pub fn validate_trace_format(raw_trace: &serde_json::Value) -> Result<(), ParseError> {
     let trace_obj = raw_trace.as_object()
         .ok_or_else(|| ParseError::InvalidFormat("Expected JSON object".to_string()))?;
@@ -269,6 +258,7 @@ pub fn validate_trace_format(raw_trace: &serde_json::Value) -> Result<(), ParseE
     
     Ok(())
 }
+*/
 
 #[cfg(test)]
 mod tests {
@@ -314,6 +304,7 @@ mod tests {
         assert_eq!(parsed.transaction_hash, "0xabc123");
     }
 
+/*
     #[test]
     fn test_validate_trace_format() {
         let valid_trace = json!({
@@ -326,6 +317,7 @@ mod tests {
         });
         assert!(validate_trace_format(&invalid_trace).is_err());
     }
+*/
     
     #[test]
     fn test_parse_camelcase_gas_cost() {

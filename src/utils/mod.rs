@@ -4,4 +4,4 @@ pub mod error;
 pub mod config;
 
 // Re-export commonly used error types for convenience
-pub use error::{RpcError, ParseError, FlamegraphError, OutputError};
+pub use error::FlamegraphError;
