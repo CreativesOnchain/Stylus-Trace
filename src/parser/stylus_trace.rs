@@ -8,7 +8,7 @@ use super::schema::Profile;
 use crate::utils::error::ParseError;
 use crate::utils::config::SCHEMA_VERSION;
 use log::{debug, warn};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 /// Raw execution step from stylusTracer
 ///
@@ -80,7 +80,7 @@ pub fn parse_trace(
         serde_json::Value::Object(obj) => obj.clone(),
         
         // Format 2: Array of structLogs (wrap it)
-        serde_json::Value::Array(logs) => {
+        serde_json::Value::Array(_logs) => {
             warn!("Trace is array format, wrapping as structLogs");
             let mut wrapper = serde_json::Map::new();
             wrapper.insert("structLogs".to_string(), raw_trace.clone());

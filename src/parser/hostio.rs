@@ -12,6 +12,8 @@ use std::collections::HashMap;
 pub enum HostIoType {
     StorageLoad,
     StorageStore,
+    StorageFlush,
+    StorageCache,
     Call,
     StaticCall,
     DelegateCall,
@@ -31,6 +33,8 @@ impl HostIoType {
         match s.to_lowercase().as_str() {
             "storage_load" | "sload" => Self::StorageLoad,
             "storage_store" | "sstore" => Self::StorageStore,
+            "storage_flush" | "storage_flush_cache" => Self::StorageFlush,
+            "storage_cache" | "storage_cache_bytes32" => Self::StorageCache,
             "call" => Self::Call,
             "staticcall" => Self::StaticCall,
             "delegatecall" => Self::DelegateCall,

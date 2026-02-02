@@ -18,7 +18,7 @@ mod rpc;
 mod utils;
 
 use commands::{execute_capture, validate_args, CaptureArgs};
-use flamegraph::{FlamegraphConfig, FlamegraphPalette};
+use flamegraph::FlamegraphConfig;
 use utils::config::SCHEMA_VERSION;
 
 /// Stylus Trace Studio - Performance profiling for Arbitrum Stylus
@@ -64,9 +64,6 @@ enum Commands {
         #[arg(long)]
         title: Option<String>,
         
-        /// Flamegraph color palette (hot, mem, io, java, consistent)
-        #[arg(long, default_value = "hot")]
-        palette: String,
         
         /// Flamegraph width in pixels
         #[arg(long, default_value = "1200")]
@@ -112,12 +109,10 @@ fn main() -> Result<()> {
             flamegraph,
             top_paths,
             title,
-            palette,
+
             width,
             summary,
         } => {
-            // Parse palette
-            let palette_enum = parse_palette(&palette);
             
             // Create flamegraph config
             let fg_config = if flamegraph.is_some() {
@@ -127,7 +122,7 @@ fn main() -> Result<()> {
                     config = config.with_title(title_str);
                 }
                 
-                config = config.with_palette(palette_enum).with_width(width);
+                config.width = width;
                 
                 Some(config)
             } else {
@@ -169,22 +164,7 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// Parse palette string to enum
-///
-/// **Private** - internal helper
-fn parse_palette(palette_str: &str) -> FlamegraphPalette {
-    match palette_str.to_lowercase().as_str() {
-        "hot" => FlamegraphPalette::Hot,
-        "mem" => FlamegraphPalette::Mem,
-        "io" => FlamegraphPalette::Io,
-        "java" => FlamegraphPalette::Java,
-        "consistent" => FlamegraphPalette::Consistent,
-        _ => {
-            eprintln!("Warning: Unknown palette '{}', using 'hot'", palette_str);
-            FlamegraphPalette::Hot
-        }
-    }
-}
+
 
 /// Validate a profile JSON file
 ///

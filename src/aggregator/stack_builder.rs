@@ -86,7 +86,7 @@ pub fn build_collapsed_stacks(parsed_trace: &ParsedTrace) -> Vec<CollapsedStack>
     
     // Current call stack (tracks function hierarchy)
     let mut call_stack: Vec<String> = Vec::new();
-    let mut prev_depth = 0u32;
+
     
     // Process each execution step
     for step in &parsed_trace.execution_steps {
@@ -118,7 +118,7 @@ pub fn build_collapsed_stacks(parsed_trace: &ParsedTrace) -> Vec<CollapsedStack>
         // FIXED: Always add to map, accumulate all gas costs (even 0)
         *stack_map.entry(stack_str).or_insert(0) += step.gas_cost;
         
-        prev_depth = step.depth;
+
     }
     
     // Also add HostIO stacks if we have HostIO events
@@ -197,7 +197,22 @@ fn add_hostio_stacks(
     ] {
         let count = hostio_counts.count_for_type(hostio_type);
         if count > 0 {
-            let stack_name = format!("hostio;{:?}", hostio_type);
+            let type_name = match hostio_type {
+                HostIoType::StorageLoad => "storage_load",
+                HostIoType::StorageStore => "storage_store",
+                HostIoType::StorageFlush => "storage_flush",
+                HostIoType::StorageCache => "storage_cache",
+                HostIoType::Call => "call",
+                HostIoType::StaticCall => "staticcall",
+                HostIoType::DelegateCall => "delegatecall",
+                HostIoType::Create => "create",
+                HostIoType::Log => "log",
+                HostIoType::SelfDestruct => "selfdestruct",
+                HostIoType::AccountBalance => "balance",
+                HostIoType::BlockHash => "blockhash",
+                HostIoType::Other => "other",
+            };
+            let stack_name = format!("hostio;{}", type_name);
             // We don't have per-event gas, so distribute total HostIO gas proportionally
             let weight = (hostio_counts.total_gas() * count) / hostio_counts.total_calls().max(1);
             *stack_map.entry(stack_name).or_insert(0) += weight;
