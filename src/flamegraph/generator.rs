@@ -186,10 +186,8 @@ fn get_ansi_color(name: &str) -> &'static str {
     if name.contains("storage_") {
         if name.contains("flush") {
             "\x1b[31;1m" // Red/Crimson
-        } else if name.contains("load") {
-            "\x1b[33m" // Yellow/Orange
         } else {
-            "\x1b[33m" // Orange
+            "\x1b[33m" // Yellow/Orange
         }
     } else if name.contains("keccak") {
         "\x1b[35m" // Magenta/Violet
@@ -315,7 +313,7 @@ pub fn generate_text_summary(stacks: &[CollapsedStack], max_lines: usize, _ink_m
         let weight_gas = stack.weight / 10_000;
         let percentage = (stack.weight as f64 / total_gas as f64) * 100.0;
         
-        let op_name = stack.stack.split(';').last().unwrap_or(&stack.stack);
+        let op_name = stack.stack.split(';').next_back().unwrap_or(&stack.stack);
         let color = get_ansi_color(op_name);
         let reset = "\x1b[0m";
 
@@ -344,7 +342,7 @@ pub fn generate_text_summary(stacks: &[CollapsedStack], max_lines: usize, _ink_m
         let bar_width = (percentage / 2.0) as usize; // Max 50 chars
         let bar = "█".repeat(bar_width);
         
-        let op_name = stack.stack.split(';').last().unwrap_or(&stack.stack);
+        let op_name = stack.stack.split(';').next_back().unwrap_or(&stack.stack);
         let color = get_ansi_color(op_name);
         let reset = "\x1b[0m";
         

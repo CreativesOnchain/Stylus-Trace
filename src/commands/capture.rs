@@ -188,7 +188,7 @@ pub fn execute_capture(args: CaptureArgs) -> Result<()> {
         println!("  └─ Intrinsic:{:>12} {}", display_intr, unit);
         println!("  HostIO Calls: {}", parsed_trace.hostio_stats.total_calls());
         println!("  Unique Paths: {}", stacks.len());
-        println!("");
+        println!();
         println!("{}", generate_text_summary(&stacks, 10, args.ink, total_execution_gas));
         println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
     }

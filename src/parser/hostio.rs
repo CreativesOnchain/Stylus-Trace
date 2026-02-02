@@ -25,10 +25,11 @@ pub enum HostIoType {
     Other,
 }
 
-impl HostIoType {
-    /// Parse HostIO type from string (from trace data)
-    pub fn from_str(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
+impl std::str::FromStr for HostIoType {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.to_lowercase().as_str() {
             "storage_load" | "sload" | "storage_load_bytes32" => Self::StorageLoad,
             "storage_store" | "sstore" | "storage_store_bytes32" => Self::StorageStore,
             "storage_flush" | "storage_flush_cache" => Self::StorageFlush,
@@ -44,9 +45,11 @@ impl HostIoType {
             "native_keccak256" | "keccak256" => Self::Other,
             "write_result" | "read_args" | "msg_value" | "msg_sender" | "msg_reentrant" => Self::Other,
             _ => Self::Other,
-        }
+        })
     }
+}
 
+impl HostIoType {
     /// Try to map an EVM opcode or instruction to a HostIO type
     pub fn from_opcode(op: &str) -> Option<Self> {
         match op.to_uppercase().as_str() {
@@ -168,14 +171,12 @@ pub fn extract_hostio_events(trace_data: &serde_json::Value) -> HostIoStats {
 }
 
 /// Parse a single HostIO event from JSON
-///
-/// **Private** - internal parsing logic
 fn parse_hostio_event(event_json: &serde_json::Value) -> Option<HostIoEvent> {
     let io_type_str = event_json.get("type")?.as_str()?;
     let gas_cost = event_json.get("gas")?.as_u64()?;
     
     Some(HostIoEvent {
-        io_type: HostIoType::from_str(io_type_str),
+        io_type: io_type_str.parse().unwrap(),
         gas_cost,
     })
 }
@@ -185,10 +186,22 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_hostio_event_parsing() {
+        let event_json = serde_json::json!({
+            "type": "storage_load",
+            "gas": 100
+        });
+        
+        let event = parse_hostio_event(&event_json).unwrap();
+        assert_eq!(event.io_type, HostIoType::StorageLoad);
+        assert_eq!(event.gas_cost, 100);
+    }
+
+    #[test]
     fn test_hostio_type_parsing() {
-        assert_eq!(HostIoType::from_str("storage_load"), HostIoType::StorageLoad);
-        assert_eq!(HostIoType::from_str("SSTORE"), HostIoType::StorageStore);
-        assert_eq!(HostIoType::from_str("unknown"), HostIoType::Other);
+        assert_eq!("storage_load".parse::<HostIoType>().unwrap(), HostIoType::StorageLoad);
+        assert_eq!("SSTORE".parse::<HostIoType>().unwrap(), HostIoType::StorageStore);
+        assert_eq!("unknown".parse::<HostIoType>().unwrap(), HostIoType::Other);
     }
 
     #[test]

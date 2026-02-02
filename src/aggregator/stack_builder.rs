@@ -67,7 +67,7 @@ pub fn build_collapsed_stacks(parsed_trace: &ParsedTrace) -> Vec<CollapsedStack>
             .unwrap_or("unknown");
         
         // Handle formats like "call;SSTORE"
-        let op_part = raw_op.split(';').last().unwrap_or(raw_op);
+        let op_part = raw_op.split(';').next_back().unwrap_or(raw_op);
         
         let operation = if let Some(io_type) = HostIoType::from_opcode(op_part) {
             match io_type {

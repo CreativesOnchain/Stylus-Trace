@@ -135,7 +135,7 @@ pub fn parse_trace(
                 .unwrap_or("unknown");
             
             // Handle formats like "call;SSTORE"
-            let op_part = op_name.split(';').last().unwrap_or(op_name);
+            let op_part = op_name.split(';').next_back().unwrap_or(op_name);
             if let Some(io_type) = HostIoType::from_opcode(op_part) {
                 hostio_stats.add_event(HostIoEvent {
                     io_type,
@@ -144,7 +144,7 @@ pub fn parse_trace(
             } else if is_stylus_tracer {
                 // In stylusTracer, everything is a HostIO equivalent
                 hostio_stats.add_event(HostIoEvent {
-                    io_type: HostIoType::from_str(op_part),
+                    io_type: op_part.parse().unwrap(),
                     gas_cost: step.gas_cost,
                 });
             }
