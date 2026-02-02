@@ -61,11 +61,33 @@ pub fn build_collapsed_stacks(parsed_trace: &ParsedTrace) -> Vec<CollapsedStack>
     
     // Process each execution step
     for step in &parsed_trace.execution_steps {
-        // Get operation name
-        let operation = step.function.as_deref()
+        // Get operation name and map to HostIO name if it's an opcode
+        let raw_op = step.function.as_deref()
             .or(step.op.as_deref())
             .unwrap_or("unknown");
         
+        // Handle formats like "call;SSTORE"
+        let op_part = raw_op.split(';').last().unwrap_or(raw_op);
+        
+        let operation = if let Some(io_type) = HostIoType::from_opcode(op_part) {
+            match io_type {
+                HostIoType::StorageLoad => "storage_load_bytes32",
+                HostIoType::StorageStore => "storage_store_bytes32",
+                HostIoType::StorageFlush => "storage_flush_cache",
+                HostIoType::StorageCache => "storage_cache_bytes32",
+                HostIoType::Call => "call",
+                HostIoType::StaticCall => "staticcall",
+                HostIoType::DelegateCall => "delegatecall",
+                HostIoType::Create => "create",
+                HostIoType::Log => "emit_log",
+                HostIoType::SelfDestruct => "selfdestruct",
+                HostIoType::AccountBalance => "msg_balance",
+                HostIoType::BlockHash => "block_hash",
+                HostIoType::Other => "other",
+            }
+        } else {
+            raw_op
+        };
         // Handle depth changes properly
         let current_depth = step.depth as usize;
         
@@ -92,9 +114,6 @@ pub fn build_collapsed_stacks(parsed_trace: &ParsedTrace) -> Vec<CollapsedStack>
 
     }
     
-    // Also add HostIO stacks if we have HostIO events
-    add_hostio_stacks(&mut stack_map, parsed_trace);
-    
     // Convert map to vector and sort by weight (descending)
     let mut stacks: Vec<CollapsedStack> = stack_map
         .into_iter()
@@ -109,56 +128,6 @@ pub fn build_collapsed_stacks(parsed_trace: &ParsedTrace) -> Vec<CollapsedStack>
 }
 
 
-/// Add HostIO events as separate stacks
-///
-/// **Private** - internal HostIO stack generation
-///
-/// HostIO events are important enough to show separately in the flamegraph
-fn add_hostio_stacks(
-    stack_map: &mut HashMap<String, u64>,
-    parsed_trace: &ParsedTrace,
-) {
-    // Create a synthetic "hostio" root for all HostIO operations
-    let hostio_counts = &parsed_trace.hostio_stats;
-    
-    // For each HostIO type with non-zero count, add a stack
-    for hostio_type in [
-        HostIoType::StorageLoad,
-        HostIoType::StorageStore,
-        HostIoType::Call,
-        HostIoType::StaticCall,
-        HostIoType::DelegateCall,
-        HostIoType::Create,
-        HostIoType::Log,
-        HostIoType::SelfDestruct,
-        HostIoType::AccountBalance,
-        HostIoType::BlockHash,
-        HostIoType::Other,
-    ] {
-        let count = hostio_counts.count_for_type(hostio_type);
-        if count > 0 {
-            let type_name = match hostio_type {
-                HostIoType::StorageLoad => "storage_load",
-                HostIoType::StorageStore => "storage_store",
-                HostIoType::StorageFlush => "storage_flush",
-                HostIoType::StorageCache => "storage_cache",
-                HostIoType::Call => "call",
-                HostIoType::StaticCall => "staticcall",
-                HostIoType::DelegateCall => "delegatecall",
-                HostIoType::Create => "create",
-                HostIoType::Log => "log",
-                HostIoType::SelfDestruct => "selfdestruct",
-                HostIoType::AccountBalance => "balance",
-                HostIoType::BlockHash => "blockhash",
-                HostIoType::Other => "other",
-            };
-            let stack_name = format!("hostio;{}", type_name);
-            // We don't have per-event gas, so distribute total HostIO gas proportionally
-            let weight = (hostio_counts.total_gas() * count) / hostio_counts.total_calls().max(1);
-            *stack_map.entry(stack_name).or_insert(0) += weight;
-        }
-    }
-}
 
 
 #[cfg(test)]

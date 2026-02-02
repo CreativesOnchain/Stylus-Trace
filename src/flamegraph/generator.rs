@@ -16,6 +16,7 @@ use std::collections::HashMap;
 pub struct FlamegraphConfig {
     pub title: String,
     pub width: usize,
+    pub ink: bool,
 }
 
 impl Default for FlamegraphConfig {
@@ -23,6 +24,7 @@ impl Default for FlamegraphConfig {
         Self {
             title: "Stylus Transaction Profile".to_string(),
             width: 1200,
+            ink: false,
         }
     }
 }
@@ -34,6 +36,11 @@ impl FlamegraphConfig {
 
     pub fn with_title(mut self, title: impl Into<String>) -> Self {
         self.title = title.into();
+        self
+    }
+
+    pub fn with_ink(mut self, ink: bool) -> Self {
+        self.ink = ink;
         self
     }
 }
@@ -113,7 +120,7 @@ pub fn generate_flamegraph(
         r#"<text x="{}" y="20" font-size="16" text-anchor="middle" font-weight="bold">{}</text>"#,
         width / 2, config.title
     ));
-
+ 
     // Render Nodes (Inverted: Root at bottom)
     render_node(
         &root,
@@ -134,6 +141,8 @@ pub fn generate_flamegraph(
     Ok(svg_content)
 }
 
+
+
 fn calculate_max_depth(node: &Node) -> usize {
     if node.children.is_empty() {
         return 0;
@@ -145,6 +154,54 @@ fn calculate_max_depth(node: &Node) -> usize {
         .max()
         .unwrap_or(0);
     max_child_depth + 1
+}
+
+fn get_node_color(name: &str) -> &'static str {
+    if name.contains("storage_") {
+        if name.contains("flush") {
+            "rgb(220, 20, 60)" // Crimson (Expensive!)
+        } else if name.contains("load") {
+            "rgb(255, 140, 0)" // Dark Orange
+        } else {
+            "rgb(255, 165, 0)" // Orange
+        }
+    } else if name.contains("keccak") {
+        "rgb(138, 43, 226)" // Blue Violet
+    } else if name.contains("memory") 
+        || name.contains("read_args") 
+        || name.contains("write_result") {
+        "rgb(34, 139, 34)" // Forest Green
+    } else if name.contains("msg_") 
+        || name.contains("call") 
+        || name.contains("create") {
+        "rgb(70, 130, 180)" // Steel Blue
+    } else if name == "root" || name.contains("Stylus") {
+        "rgb(100, 149, 237)" // Cornflower Blue
+    } else {
+        "rgb(169, 169, 169)" // Gray (Generic)
+    }
+}
+
+fn get_ansi_color(name: &str) -> &'static str {
+    if name.contains("storage_") {
+        if name.contains("flush") {
+            "\x1b[31;1m" // Red/Crimson
+        } else if name.contains("load") {
+            "\x1b[33m" // Yellow/Orange
+        } else {
+            "\x1b[33m" // Orange
+        }
+    } else if name.contains("keccak") {
+        "\x1b[35m" // Magenta/Violet
+    } else if name.contains("memory") || name.contains("read_args") || name.contains("write_result") {
+        "\x1b[32m" // Green
+    } else if name.contains("msg_") || name.contains("call") || name.contains("create") {
+        "\x1b[34m" // Blue
+    } else if name == "root" || name.contains("Stylus") {
+        "\x1b[36m" // Cyan
+    } else {
+        "\x1b[90m" // Gray
+    }
 }
 
 fn render_node(
@@ -160,39 +217,17 @@ fn render_node(
         return;
     } // Optimization: Don't render invisible blocks
 
-    // Custom Color Logic (Ported from Stylus Studio)
-    let color = if node.name.contains("storage_") {
-        if node.name.contains("flush") {
-            "rgb(220, 20, 60)" // Crimson (Expensive!)
-        } else if node.name.contains("load") {
-            "rgb(255, 140, 0)" // Dark Orange
-        } else {
-            "rgb(255, 165, 0)" // Orange
-        }
-    } else if node.name.contains("keccak") {
-        "rgb(138, 43, 226)" // Blue Violet
-    } else if node.name.contains("memory") 
-        || node.name.contains("read_args") 
-        || node.name.contains("write_result") {
-        "rgb(34, 139, 34)" // Forest Green
-    } else if node.name.contains("msg_") 
-        || node.name.contains("call") 
-        || node.name.contains("create") {
-        "rgb(70, 130, 180)" // Steel Blue
-    } else if node.name == "root" || node.name.contains("Stylus") {
-        "rgb(100, 149, 237)" // Cornflower Blue
-    } else {
-        "rgb(169, 169, 169)" // Gray (Generic)
-    };
+    let color = get_node_color(&node.name);
 
     // Y position (Inverted: Graph Bottom - (Level * Height))
     // We add margin for title (30px)
     let y = graph_height - ((level + 1) * h) + 30;
 
     // Draw Rect
+    let gas_val = node.value / 10_000;
     out.push_str(&format!(
-        r#"<rect x="{:.2}" y="{}" width="{:.2}" height="{}" fill="{}" class="func"><title>{} ({} gas)</title></rect>"#,
-        x, y, w, h, color, node.name, node.value
+        r#"<rect x="{:.2}" y="{}" width="{:.2}" height="{}" fill="{}" class="func"><title>{} ({} ink / {} gas)</title></rect>"#,
+        x, y, w, h, color, node.name, node.value, gas_val
     ));
 
     // Draw Text (if wide enough)
@@ -264,21 +299,64 @@ fn render_legend(out: &mut String, graph_height: usize) {
     }
 }
 
-/// Create a text summary (unchanged functionality, simplified impl)
-pub fn generate_text_summary(stacks: &[CollapsedStack], max_lines: usize) -> String {
+/// Create a rich text summary with percentages and table formatting
+pub fn generate_text_summary(stacks: &[CollapsedStack], max_lines: usize, _ink_mode: bool, total_execution_gas: u64) -> String {
     let mut lines = Vec::new();
-    lines.push("Top Gas Consumers:".to_string());
-    lines.push("─".repeat(40));
+    
+    lines.push("  🚀 EXECUTION HOT PATHS".to_string());
+    lines.push("  ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━┓".to_string());
+    lines.push(format!("  ┃ {:<42} ┃ {:^12} ┃ {:^12} ┃ {:^7} ┃", "Execution Stack (Hottest First)", "GAS", "INK (x10k)", "%" ));
+    lines.push("  ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━╋━━━━━━━━━┫".to_string());
 
-    for (i, stack) in stacks.iter().take(max_lines).enumerate() {
+    let total_gas = total_execution_gas.max(1);
+
+    for stack in stacks.iter().take(max_lines) {
+        let weight_ink = stack.weight;
+        let weight_gas = stack.weight / 10_000;
+        let percentage = (stack.weight as f64 / total_gas as f64) * 100.0;
+        
+        let op_name = stack.stack.split(';').last().unwrap_or(&stack.stack);
+        let color = get_ansi_color(op_name);
+        let reset = "\x1b[0m";
+
+        // Truncate stack if too long for display
+        let display_stack = if stack.stack.len() > 40 {
+            format!("...{}", &stack.stack[stack.stack.len() - 37..])
+        } else {
+            stack.stack.clone()
+        };
+
         lines.push(format!(
-            "{:>2}. {:>10} gas | {}",
-            i + 1, stack.weight, stack.stack
+            "  ┃ {}{:<42}{} ┃ {:>12} ┃ {:>12} ┃ {:>6.1}% ┃",
+            color, display_stack, reset, weight_gas, weight_ink, percentage
         ));
     }
     
+    lines.push("  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━┻━━━━━━━━━┛".to_string());
+    
+    // Add Simplified Flamegraph section
+    lines.push("".to_string());
+    lines.push("  🔥 SIMPLIFIED FLAMEGRAPH".to_string());
+    lines.push("  root ██████████████████████████████████████████████████ 100%".to_string());
+    
+    for stack in stacks.iter().take(5) {
+        let percentage = (stack.weight as f64 / total_gas as f64) * 100.0;
+        let bar_width = (percentage / 2.0) as usize; // Max 50 chars
+        let bar = "█".repeat(bar_width);
+        
+        let op_name = stack.stack.split(';').last().unwrap_or(&stack.stack);
+        let color = get_ansi_color(op_name);
+        let reset = "\x1b[0m";
+        
+        lines.push(format!(
+            "  └─ {}{:<20}{} {}{:50}{} {:>5.1}%",
+            color, op_name, reset, color, bar, reset, percentage
+        ));
+    }
+
     if stacks.len() > max_lines {
-        lines.push(format!("... and {} more", stacks.len() - max_lines));
+        lines.push("".to_string());
+        lines.push(format!("   (Showing top {} of {} unique paths)", max_lines, stacks.len()));
     }
     
     lines.join("\n")

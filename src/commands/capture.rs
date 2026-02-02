@@ -46,6 +46,9 @@ pub struct CaptureArgs {
 
     /// Optional tracer name (None = default opcode tracer)
     pub tracer: Option<String>,
+
+    /// Show Stylus Ink units (scaled by 10,000)
+    pub ink: bool,
 }
 
 impl Default for CaptureArgs {
@@ -58,7 +61,8 @@ impl Default for CaptureArgs {
             top_paths: 20,
             flamegraph_config: None,
             print_summary: false,
-            tracer: None,  // FIXED: Use default opcode tracer
+            tracer: None,
+            ink: false,
         }
     }
 }
@@ -167,15 +171,26 @@ pub fn execute_capture(args: CaptureArgs) -> Result<()> {
     
     // Print text summary (if requested)
     if args.print_summary {
-        println!("\n{}", "=".repeat(80));
-        println!("PROFILE SUMMARY");
-        println!("{}", "=".repeat(80));
-        println!("Transaction: {}", args.transaction_hash);
-        println!("Total Gas:   {}", parsed_trace.total_gas_used);
-        println!("HostIO Calls: {}", parsed_trace.hostio_stats.total_calls());
-        println!("Unique Stacks: {}", stacks.len());
-        println!("\n{}", generate_text_summary(&stacks, 10));
-        println!("{}", "=".repeat(80));
+        let total_execution_gas: u64 = stacks.iter().map(|s| s.weight).sum();
+        let intrinsic_gas = parsed_trace.total_gas_used.saturating_sub(total_execution_gas);
+        
+        let display_total = if args.ink { parsed_trace.total_gas_used } else { parsed_trace.total_gas_used / 10_000 };
+        let display_exec = if args.ink { total_execution_gas } else { total_execution_gas / 10_000 };
+        let display_intr = if args.ink { intrinsic_gas } else { intrinsic_gas / 10_000 };
+        let unit = if args.ink { "ink" } else { "gas" };
+
+        println!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        println!("  📊 STYLUS TRANSACTION PROFILE SUMMARY");
+        println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        println!("  Transaction: {}", args.transaction_hash);
+        println!("  Total Gas:   {:>12} {}", display_total, unit);
+        println!("  ├─ Execution:{:>12} {}", display_exec, unit);
+        println!("  └─ Intrinsic:{:>12} {}", display_intr, unit);
+        println!("  HostIO Calls: {}", parsed_trace.hostio_stats.total_calls());
+        println!("  Unique Paths: {}", stacks.len());
+        println!("");
+        println!("{}", generate_text_summary(&stacks, 10, args.ink, total_execution_gas));
+        println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
     }
     
     let elapsed = start_time.elapsed();

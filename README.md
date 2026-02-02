@@ -1,4 +1,4 @@
-cd# Stylus Trace
+# Stylus Trace
 
 **Performance profiling and flamegraph generation for Arbitrum Stylus transactions.**
 

@@ -53,14 +53,11 @@ impl RpcClient {
         info!("Fetching trace for transaction: {}", tx_hash);
         
         // Build params based on tracer
-        let params = if let Some(tracer_name) = tracer {
-            serde_json::json!([
-                tx_hash,
-                { "tracer": tracer_name }
-            ])
-        } else {
-            serde_json::json!([tx_hash])
-        };
+        let tracer_name = tracer.unwrap_or("stylusTracer");
+        let params = serde_json::json!([
+            tx_hash,
+            { "tracer": tracer_name }
+        ]);
         
         // Build RPC request
         let request = serde_json::json!({

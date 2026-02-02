@@ -65,6 +65,10 @@ enum Commands {
         /// Print text summary to stdout
         #[arg(long)]
         summary: bool,
+
+        /// Use Stylus Ink units (scaled by 10,000)
+        #[arg(long)]
+        ink: bool,
     },
     
     /// Validate a profile JSON file
@@ -105,6 +109,7 @@ fn main() -> Result<()> {
 
             width,
             summary,
+            ink,
         } => {
             
             // Create flamegraph config
@@ -129,9 +134,10 @@ fn main() -> Result<()> {
                 output_json: output,
                 output_svg: flamegraph,
                 top_paths,
-                flamegraph_config: fg_config,
+                flamegraph_config: fg_config.map(|c| c.with_ink(ink)),
                 print_summary: summary,
-                tracer: None,  // FIXED: Use default opcode tracer
+                tracer: None,
+                ink,
             };
             
             // Validate args first

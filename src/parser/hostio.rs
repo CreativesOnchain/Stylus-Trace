@@ -27,23 +27,40 @@ pub enum HostIoType {
 
 impl HostIoType {
     /// Parse HostIO type from string (from trace data)
-    ///
-    /// **Private** - only used internally during parsing
-    fn from_str(s: &str) -> Self {
+    pub fn from_str(s: &str) -> Self {
         match s.to_lowercase().as_str() {
-            "storage_load" | "sload" => Self::StorageLoad,
-            "storage_store" | "sstore" => Self::StorageStore,
+            "storage_load" | "sload" | "storage_load_bytes32" => Self::StorageLoad,
+            "storage_store" | "sstore" | "storage_store_bytes32" => Self::StorageStore,
             "storage_flush" | "storage_flush_cache" => Self::StorageFlush,
             "storage_cache" | "storage_cache_bytes32" => Self::StorageCache,
             "call" => Self::Call,
             "staticcall" => Self::StaticCall,
             "delegatecall" => Self::DelegateCall,
             "create" | "create2" => Self::Create,
-            "log" | "log0" | "log1" | "log2" | "log3" | "log4" => Self::Log,
+            "log" | "log0" | "log1" | "log2" | "log3" | "log4" | "emit_log" => Self::Log,
             "selfdestruct" => Self::SelfDestruct,
-            "balance" => Self::AccountBalance,
-            "blockhash" => Self::BlockHash,
+            "balance" | "account_balance" => Self::AccountBalance,
+            "blockhash" | "block_hash" => Self::BlockHash,
+            "native_keccak256" | "keccak256" => Self::Other,
+            "write_result" | "read_args" | "msg_value" | "msg_sender" | "msg_reentrant" => Self::Other,
             _ => Self::Other,
+        }
+    }
+
+    /// Try to map an EVM opcode or instruction to a HostIO type
+    pub fn from_opcode(op: &str) -> Option<Self> {
+        match op.to_uppercase().as_str() {
+            "SLOAD" => Some(Self::StorageLoad),
+            "SSTORE" => Some(Self::StorageFlush), // In Stylus, SSTORE often means flush
+            "LOG0" | "LOG1" | "LOG2" | "LOG3" | "LOG4" => Some(Self::Log),
+            "CALL" => Some(Self::Call),
+            "STATICCALL" => Some(Self::StaticCall),
+            "DELEGATECALL" => Some(Self::DelegateCall),
+            "CREATE" | "CREATE2" => Some(Self::Create),
+            "SELFDESTRUCT" => Some(Self::SelfDestruct),
+            "BALANCE" => Some(Self::AccountBalance),
+            "BLOCKHASH" => Some(Self::BlockHash),
+            _ => None,
         }
     }
 }
@@ -96,7 +113,24 @@ impl HostIoStats {
     pub fn to_map(&self) -> HashMap<String, u64> {
         self.counts
             .iter()
-            .map(|(k, v)| (format!("{:?}", k), *v))
+            .map(|(k, v)| {
+                let name = match k {
+                    HostIoType::StorageLoad => "storage_load",
+                    HostIoType::StorageStore => "storage_store",
+                    HostIoType::StorageFlush => "storage_flush_cache",
+                    HostIoType::StorageCache => "storage_cache",
+                    HostIoType::Call => "call",
+                    HostIoType::StaticCall => "staticcall",
+                    HostIoType::DelegateCall => "delegatecall",
+                    HostIoType::Create => "create",
+                    HostIoType::Log => "emit_log",
+                    HostIoType::SelfDestruct => "selfdestruct",
+                    HostIoType::AccountBalance => "account_balance",
+                    HostIoType::BlockHash => "block_hash",
+                    HostIoType::Other => "other",
+                };
+                (name.to_string(), *v)
+            })
             .collect()
     }
 }

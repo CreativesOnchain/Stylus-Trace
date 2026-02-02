@@ -3,3 +3,5 @@
 *.svg
 *.json
 profiles/
+flamegraphs.svg
+profile.json
