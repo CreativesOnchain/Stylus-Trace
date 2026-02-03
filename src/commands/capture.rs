@@ -8,14 +8,13 @@
 //! 5. Calculates metrics
 //! 6. Writes output files
 
-use crate::aggregator::{build_collapsed_stacks, calculate_hot_paths, calculate_gas_distribution};
-use crate::flamegraph::{generate_flamegraph, generate_text_summary, FlamegraphConfig};
-use crate::output::{write_profile, write_svg};
-use crate::parser::{parse_trace, to_profile};
-use crate::rpc::RpcClient;
-use crate::utils::config::SCHEMA_VERSION;
+use stylus_trace_studio::aggregator::{build_collapsed_stacks, calculate_hot_paths, calculate_gas_distribution};
+use stylus_trace_studio::flamegraph::{generate_flamegraph, generate_text_summary, FlamegraphConfig};
+use stylus_trace_studio::output::{write_profile, write_svg};
+use stylus_trace_studio::parser::{parse_trace, to_profile, source_map::SourceMapper};
+use stylus_trace_studio::rpc::RpcClient;
 use anyhow::{Context, Result};
-use log::{info, debug};
+use log::{info, debug, warn};
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -47,6 +46,12 @@ pub struct CaptureArgs {
 
     /// Optional tracer name (None = default opcode tracer)
     pub tracer: Option<String>,
+
+    /// Show Stylus Ink units (scaled by 10,000)
+    pub ink: bool,
+
+    /// Path to WASM binary (optional)
+    pub wasm: Option<PathBuf>,
 }
 
 impl Default for CaptureArgs {
@@ -59,7 +64,9 @@ impl Default for CaptureArgs {
             top_paths: 20,
             flamegraph_config: None,
             print_summary: false,
-            tracer: None,  // FIXED: Use default opcode tracer
+            tracer: None,
+            ink: false,
+            wasm: None,
         }
     }
 }
@@ -113,6 +120,21 @@ pub fn execute_capture(args: CaptureArgs) -> Result<()> {
     debug!("Parsed trace: {} gas used, {} execution steps",
            parsed_trace.total_gas_used,
            parsed_trace.execution_steps.len());
+
+    // Initialize SourceMapper if WASM path is provided
+    let mapper = if let Some(wasm_path) = &args.wasm {
+        info!("Step 2.5/6: Loading WASM for source mapping: {}...", wasm_path.display());
+        match SourceMapper::new(wasm_path) {
+            Ok(m) => Some(m),
+            Err(e) => {
+                warn!("Failed to load WASM binary for source mapping: {}", e);
+                warn!("Continuing without source mapping information.");
+                None
+            }
+        }
+    } else {
+        None
+    };
     
     // Step 3: Build collapsed stacks
     info!("Step 3/6: Building collapsed stacks...");
@@ -124,21 +146,15 @@ pub fn execute_capture(args: CaptureArgs) -> Result<()> {
     let gas_dist = calculate_gas_distribution(&stacks);
     info!("Gas distribution: {}", gas_dist.summary());
     
-    // Step 4: Calculate hot paths
+    // Step 4: Calculate hot paths (Percentages relative to Execution Total)
     info!("Step 4/6: Calculating top {} hot paths...", args.top_paths);
-    let hot_paths = calculate_hot_paths(&stacks, parsed_trace.total_gas_used, args.top_paths);
-    
-    debug!("Top 3 hot paths:");
-    for (i, path) in hot_paths.iter().take(3).enumerate() {
-        debug!("  {}. {} gas ({:.1}%): {}", 
-               i + 1, path.gas, path.percentage, path.stack);
-    }
+    let hot_paths = calculate_hot_paths(&stacks, 0, args.top_paths); // 0 is currently ignored since calculate_hot_paths sums internally
     
     // Step 5: Generate flamegraph (if requested)
     let svg_content = if args.output_svg.is_some() {
         info!("Step 5/6: Generating flamegraph...");
         let config = args.flamegraph_config.as_ref();
-        let svg = generate_flamegraph(&stacks, config)
+        let svg = generate_flamegraph(&stacks, config, mapper.as_ref())
             .context("Failed to generate flamegraph")?;
         Some(svg)
     } else {
@@ -150,7 +166,7 @@ pub fn execute_capture(args: CaptureArgs) -> Result<()> {
     info!("Step 6/6: Writing output files...");
     
     // Create profile
-    let profile = to_profile(&parsed_trace, hot_paths);
+    let profile = to_profile(&parsed_trace, hot_paths, mapper.as_ref());
     
     // Write JSON profile
     write_profile(&profile, &args.output_json)
@@ -168,15 +184,26 @@ pub fn execute_capture(args: CaptureArgs) -> Result<()> {
     
     // Print text summary (if requested)
     if args.print_summary {
-        println!("\n{}", "=".repeat(80));
-        println!("PROFILE SUMMARY");
-        println!("{}", "=".repeat(80));
-        println!("Transaction: {}", args.transaction_hash);
-        println!("Total Gas:   {}", parsed_trace.total_gas_used);
-        println!("HostIO Calls: {}", parsed_trace.hostio_stats.total_calls());
-        println!("Unique Stacks: {}", stacks.len());
-        println!("\n{}", generate_text_summary(&stacks, 10));
-        println!("{}", "=".repeat(80));
+        let total_execution_gas: u64 = stacks.iter().map(|s| s.weight).sum();
+        let intrinsic_gas = parsed_trace.total_gas_used.saturating_sub(total_execution_gas);
+        
+        let display_total = if args.ink { parsed_trace.total_gas_used } else { parsed_trace.total_gas_used / 10_000 };
+        let display_exec = if args.ink { total_execution_gas } else { total_execution_gas / 10_000 };
+        let display_intr = if args.ink { intrinsic_gas } else { intrinsic_gas / 10_000 };
+        let unit = if args.ink { "ink" } else { "gas" };
+
+        println!("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        println!("  📊 STYLUS TRANSACTION PROFILE SUMMARY");
+        println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        println!("  Transaction: {}", args.transaction_hash);
+        println!("  Total Gas:   {:>12} {}", display_total, unit);
+        println!("  ├─ Execution:{:>12} {}", display_exec, unit);
+        println!("  └─ Intrinsic:{:>12} {}", display_intr, unit);
+        println!("  HostIO Calls: {}", parsed_trace.hostio_stats.total_calls());
+        println!("  Unique Paths: {}", stacks.len());
+        println!();
+        println!("{}", generate_text_summary(&profile.hot_paths, 10, args.ink));
+        println!("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
     }
     
     let elapsed = start_time.elapsed();
@@ -246,16 +273,9 @@ pub fn validate_args(args: &CaptureArgs) -> Result<()> {
     Ok(())
 }
 
-/// Quick capture with defaults (convenience function)
-///
-/// **Public** - simplified API for common use case
-///
-/// # Arguments
-/// * `rpc_url` - RPC endpoint
-/// * `tx_hash` - Transaction hash
-///
-/// # Returns
-/// Paths to generated files (JSON, SVG)
+// /// Quick capture with defaults (convenience function)
+// ...
+/*
 pub fn quick_capture(rpc_url: &str, tx_hash: &str) -> Result<(PathBuf, PathBuf)> {
     let args = CaptureArgs {
         rpc_url: rpc_url.to_string(),
@@ -272,6 +292,7 @@ pub fn quick_capture(rpc_url: &str, tx_hash: &str) -> Result<(PathBuf, PathBuf)>
     
     Ok((args.output_json, args.output_svg.unwrap()))
 }
+*/
 
 #[cfg(test)]
 mod tests {

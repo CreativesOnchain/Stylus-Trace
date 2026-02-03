@@ -20,27 +20,28 @@ use log::debug;
 /// Vector of hot paths, sorted by gas consumption (descending)
 pub fn calculate_hot_paths(
     stacks: &[CollapsedStack],
-    total_gas: u64,
+    _total_gas: u64,
     top_n: usize,
 ) -> Vec<HotPath> {
     debug!("Calculating top {} hot paths from {} stacks", top_n, stacks.len());
     
-    // Stacks are already sorted by weight from stack_builder
-    // Just take the top N and convert to HotPath format
+    // Total weight of these stacks is our base for percentages
+    let execution_total: u64 = stacks.iter().map(|s| s.weight).sum();
+    
     stacks
         .iter()
         .take(top_n)
-        .map(|stack| create_hot_path(stack, total_gas))
+        .map(|stack| create_hot_path(stack, execution_total))
         .collect()
 }
 
 /// Create a HotPath from a CollapsedStack
 ///
 /// **Private** - internal conversion
-fn create_hot_path(stack: &CollapsedStack, total_gas: u64) -> HotPath {
-    // Calculate percentage of total gas
-    let percentage = if total_gas > 0 {
-        (stack.weight as f64 / total_gas as f64) * 100.0
+fn create_hot_path(stack: &CollapsedStack, denominator: u64) -> HotPath {
+    // Calculate percentage based on passed denominator (usually total execution gas)
+    let percentage = if denominator > 0 {
+        (stack.weight as f64 / denominator as f64) * 100.0
     } else {
         0.0
     };
@@ -49,7 +50,12 @@ fn create_hot_path(stack: &CollapsedStack, total_gas: u64) -> HotPath {
         stack: stack.stack.clone(),
         gas: stack.weight,
         percentage,
-        source_hint: None, // Will be populated in Milestone 3
+        source_hint: stack.last_pc.map(|pc| crate::parser::schema::SourceHint {
+            file: "unknown".to_string(),
+            line: None,
+            column: None,
+            function: Some(format!("0x{:x}", pc)), // Temporary: store PC in function field
+        }),
     }
 }
 
@@ -93,7 +99,6 @@ pub fn calculate_gas_distribution(stacks: &[CollapsedStack]) -> GasDistribution 
         stack_count: count,
         mean_gas_per_stack: mean,
         median_gas_per_stack: median,
-        top_10_percent_gas,
         top_10_percent_percentage: if total > 0 {
             (top_10_percent_gas as f64 / total as f64) * 100.0
         } else {
@@ -120,7 +125,6 @@ pub struct GasDistribution {
     pub median_gas_per_stack: u64,
     
     /// Gas consumed by top 10% of stacks
-    pub top_10_percent_gas: u64,
     
     /// Percentage of total gas in top 10%
     pub top_10_percent_percentage: f64,
@@ -133,28 +137,19 @@ impl Default for GasDistribution {
             stack_count: 0,
             mean_gas_per_stack: 0,
             median_gas_per_stack: 0,
-            top_10_percent_gas: 0,
             top_10_percent_percentage: 0.0,
         }
     }
 }
 
 impl GasDistribution {
-    /// Check if gas distribution is highly concentrated
-    ///
-    /// **Public** - useful for identifying optimization opportunities
-    ///
-    /// Returns true if top 10% of stacks consume >80% of gas
-    pub fn is_highly_concentrated(&self) -> bool {
-        self.top_10_percent_percentage > 80.0
-    }
     
     /// Get human-readable summary
     ///
     /// **Public** - for logging and debugging
     pub fn summary(&self) -> String {
         format!(
-            "Total: {} gas | Stacks: {} | Mean: {} | Median: {} | Top 10%: {:.1}%",
+            "Total: {} | Stacks: {} | Mean: {} | Median: {} | Top 10%: {:.1}%",
             self.total_gas,
             self.stack_count,
             self.mean_gas_per_stack,
@@ -172,9 +167,9 @@ mod tests {
     #[test]
     fn test_calculate_hot_paths() {
         let stacks = vec![
-            CollapsedStack::new("main;execute".to_string(), 5000),
-            CollapsedStack::new("main;storage".to_string(), 3000),
-            CollapsedStack::new("main;compute".to_string(), 2000),
+            CollapsedStack::new("main;execute".to_string(), 5000, Some(0x100)),
+            CollapsedStack::new("main;storage".to_string(), 3000, Some(0x200)),
+            CollapsedStack::new("main;compute".to_string(), 2000, Some(0x300)),
         ];
         
         let hot_paths = calculate_hot_paths(&stacks, 10000, 2);
@@ -188,10 +183,10 @@ mod tests {
     #[test]
     fn test_calculate_gas_distribution() {
         let stacks = vec![
-            CollapsedStack::new("stack1".to_string(), 8500),  // 85% - clearly concentrated
-            CollapsedStack::new("stack2".to_string(), 1000),
-            CollapsedStack::new("stack3".to_string(), 250),
-            CollapsedStack::new("stack4".to_string(), 250),
+            CollapsedStack::new("stack1".to_string(), 8500, Some(0x1)),
+            CollapsedStack::new("stack2".to_string(), 1000, Some(0x2)),
+            CollapsedStack::new("stack3".to_string(), 250, Some(0x3)),
+            CollapsedStack::new("stack4".to_string(), 250, Some(0x4)),
         ];
         
         let dist = calculate_gas_distribution(&stacks);
@@ -199,7 +194,7 @@ mod tests {
         assert_eq!(dist.total_gas, 10000);
         assert_eq!(dist.stack_count, 4);
         assert_eq!(dist.mean_gas_per_stack, 2500);
-        assert!(dist.is_highly_concentrated()); // Top stack has 80%
+        // assert!(dist.is_highly_concentrated()); // Top stack has 80%
     }
 
     #[test]
@@ -212,12 +207,13 @@ mod tests {
 
     #[test]
     fn test_create_hot_path() {
-        let stack = CollapsedStack::new("test;path".to_string(), 2500);
+        let stack = CollapsedStack::new("test;path".to_string(), 2500, Some(0x42));
         let hot_path = create_hot_path(&stack, 10000);
         
         assert_eq!(hot_path.stack, "test;path");
         assert_eq!(hot_path.gas, 2500);
         assert_eq!(hot_path.percentage, 25.0);
-        assert!(hot_path.source_hint.is_none());
+        assert!(hot_path.source_hint.is_some());
+        assert_eq!(hot_path.source_hint.unwrap().function, Some("0x42".to_string()));
     }
 }

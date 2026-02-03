@@ -10,5 +10,5 @@ pub use generator::{
     generate_flamegraph,
     generate_text_summary,
     FlamegraphConfig,
-    FlamegraphPalette,
+
 };

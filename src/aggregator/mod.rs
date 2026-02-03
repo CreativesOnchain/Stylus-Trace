@@ -9,5 +9,5 @@ pub mod stack_builder;
 pub mod metrics;
 
 // Re-export main types and functions
-pub use stack_builder::{CollapsedStack, build_collapsed_stacks, merge_small_stacks};
-pub use metrics::{calculate_hot_paths, calculate_gas_distribution, GasDistribution};
+pub use stack_builder::build_collapsed_stacks;
+pub use metrics::{calculate_hot_paths, calculate_gas_distribution};

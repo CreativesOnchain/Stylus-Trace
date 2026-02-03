@@ -12,6 +12,8 @@ use std::collections::HashMap;
 pub enum HostIoType {
     StorageLoad,
     StorageStore,
+    StorageFlush,
+    StorageCache,
     Call,
     StaticCall,
     DelegateCall,
@@ -20,26 +22,59 @@ pub enum HostIoType {
     SelfDestruct,
     AccountBalance,
     BlockHash,
+    // Stylus specific
+    NativeKeccak256,
+    ReadArgs,
+    WriteResult,
+    MsgValue,
+    MsgSender,
+    MsgReentrant,
     Other,
 }
 
-impl HostIoType {
-    /// Parse HostIO type from string (from trace data)
-    ///
-    /// **Private** - only used internally during parsing
-    fn from_str(s: &str) -> Self {
-        match s.to_lowercase().as_str() {
-            "storage_load" | "sload" => Self::StorageLoad,
-            "storage_store" | "sstore" => Self::StorageStore,
+impl std::str::FromStr for HostIoType {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s.to_lowercase().as_str() {
+            "storage_load" | "sload" | "storage_load_bytes32" => Self::StorageLoad,
+            "storage_store" | "sstore" | "storage_store_bytes32" => Self::StorageStore,
+            "storage_flush" | "storage_flush_cache" => Self::StorageFlush,
+            "storage_cache" | "storage_cache_bytes32" => Self::StorageCache,
             "call" => Self::Call,
             "staticcall" => Self::StaticCall,
             "delegatecall" => Self::DelegateCall,
             "create" | "create2" => Self::Create,
-            "log" | "log0" | "log1" | "log2" | "log3" | "log4" => Self::Log,
+            "log" | "log0" | "log1" | "log2" | "log3" | "log4" | "emit_log" => Self::Log,
             "selfdestruct" => Self::SelfDestruct,
-            "balance" => Self::AccountBalance,
-            "blockhash" => Self::BlockHash,
+            "balance" | "account_balance" => Self::AccountBalance,
+            "blockhash" | "block_hash" => Self::BlockHash,
+            "native_keccak256" | "keccak256" => Self::NativeKeccak256,
+            "read_args" | "calldatacopy" => Self::ReadArgs,
+            "write_result" | "return" => Self::WriteResult,
+            "msg_value" | "callvalue" => Self::MsgValue,
+            "msg_sender" | "caller" => Self::MsgSender,
+            "msg_reentrant" => Self::MsgReentrant,
             _ => Self::Other,
+        })
+    }
+}
+
+impl HostIoType {
+    /// Try to map an EVM opcode or instruction to a HostIO type
+    pub fn from_opcode(op: &str) -> Option<Self> {
+        match op.to_uppercase().as_str() {
+            "SLOAD" => Some(Self::StorageLoad),
+            "SSTORE" => Some(Self::StorageFlush), // In Stylus, SSTORE often means flush
+            "LOG0" | "LOG1" | "LOG2" | "LOG3" | "LOG4" => Some(Self::Log),
+            "CALL" => Some(Self::Call),
+            "STATICCALL" => Some(Self::StaticCall),
+            "DELEGATECALL" => Some(Self::DelegateCall),
+            "CREATE" | "CREATE2" => Some(Self::Create),
+            "SELFDESTRUCT" => Some(Self::SelfDestruct),
+            "BALANCE" => Some(Self::AccountBalance),
+            "BLOCKHASH" => Some(Self::BlockHash),
+            _ => None,
         }
     }
 }
@@ -92,7 +127,30 @@ impl HostIoStats {
     pub fn to_map(&self) -> HashMap<String, u64> {
         self.counts
             .iter()
-            .map(|(k, v)| (format!("{:?}", k), *v))
+            .map(|(k, v)| {
+                let name = match k {
+                    HostIoType::StorageLoad => "storage_load",
+                    HostIoType::StorageStore => "storage_store",
+                    HostIoType::StorageFlush => "storage_flush_cache",
+                    HostIoType::StorageCache => "storage_cache",
+                    HostIoType::Call => "call",
+                    HostIoType::StaticCall => "staticcall",
+                    HostIoType::DelegateCall => "delegatecall",
+                    HostIoType::Create => "create",
+                    HostIoType::Log => "emit_log",
+                    HostIoType::SelfDestruct => "selfdestruct",
+                    HostIoType::AccountBalance => "account_balance",
+                    HostIoType::BlockHash => "block_hash",
+                    HostIoType::NativeKeccak256 => "native_keccak256",
+                    HostIoType::ReadArgs => "read_args",
+                    HostIoType::WriteResult => "write_result",
+                    HostIoType::MsgValue => "msg_value",
+                    HostIoType::MsgSender => "msg_sender",
+                    HostIoType::MsgReentrant => "msg_reentrant",
+                    HostIoType::Other => "other",
+                };
+                (name.to_string(), *v)
+            })
             .collect()
     }
 }
@@ -130,14 +188,12 @@ pub fn extract_hostio_events(trace_data: &serde_json::Value) -> HostIoStats {
 }
 
 /// Parse a single HostIO event from JSON
-///
-/// **Private** - internal parsing logic
 fn parse_hostio_event(event_json: &serde_json::Value) -> Option<HostIoEvent> {
     let io_type_str = event_json.get("type")?.as_str()?;
     let gas_cost = event_json.get("gas")?.as_u64()?;
     
     Some(HostIoEvent {
-        io_type: HostIoType::from_str(io_type_str),
+        io_type: io_type_str.parse().unwrap(),
         gas_cost,
     })
 }
@@ -147,10 +203,22 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_hostio_event_parsing() {
+        let event_json = serde_json::json!({
+            "type": "storage_load",
+            "gas": 100
+        });
+        
+        let event = parse_hostio_event(&event_json).unwrap();
+        assert_eq!(event.io_type, HostIoType::StorageLoad);
+        assert_eq!(event.gas_cost, 100);
+    }
+
+    #[test]
     fn test_hostio_type_parsing() {
-        assert_eq!(HostIoType::from_str("storage_load"), HostIoType::StorageLoad);
-        assert_eq!(HostIoType::from_str("SSTORE"), HostIoType::StorageStore);
-        assert_eq!(HostIoType::from_str("unknown"), HostIoType::Other);
+        assert_eq!("storage_load".parse::<HostIoType>().unwrap(), HostIoType::StorageLoad);
+        assert_eq!("SSTORE".parse::<HostIoType>().unwrap(), HostIoType::StorageStore);
+        assert_eq!("unknown".parse::<HostIoType>().unwrap(), HostIoType::Other);
     }
 
     #[test]
