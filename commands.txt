@@ -1,0 +1,34 @@
+export CONTRACT_ADDRESS="0xa39ffa43eba037d67a0f4fe91956038aba0ca386"       
+export PRIV_KEY="0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659"
+export MY_ADDR="0x3f1Eae7D46d88F08fc2F8ed27FCb2AB183EB2d0E"
+
+TX_HASH=$(cast send 0xa39ffa43eba037d67a0f4fe91956038aba0ca386 \
+  "giveCupcakeTo(address)" $MY_ADDR \
+  --private-key $PRIV_KEY \
+  --rpc-url http://localhost:8547 \
+  --async)
+
+  cast call 0xa39ffa43eba037d67a0f4fe91956038aba0ca386 \
+  "getCupcakeBalanceFor(address)" $MY_ADDR \
+  --rpc-url http://localhost:8547
+
+  stylus-trace capture \
+  --rpc http://localhost:8547 \
+  --tx $TX_HASH \
+  --output profile.json \
+  --flamegraph flamegraph.svg \
+  --summary
+
+  curl -X POST http://localhost:8547 \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"jsonrpc\": \"2.0\",
+    \"id\": 1,
+    \"method\": \"debug_traceTransaction\",
+    \"params\": [
+      \"$TX_HASH\",
+      { \"tracer\": \"stylusTracer\" }
+    ]
+  }" > trace.json
+
+  open flamegraph.svg

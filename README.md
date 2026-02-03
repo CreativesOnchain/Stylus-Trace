@@ -27,10 +27,11 @@ cargo install --force cargo-stylus
 ### Installation
 
 ```bash
-cargo install stylus-trace
+cargo install stylus-trace-studio
 ```
 
 Verify:
+
 ```bash
 stylus-trace help
 ```
@@ -48,11 +49,13 @@ cd nitro-devnode
 ```
 
 This starts a local Arbitrum node at:
+
 ```
 http://localhost:8547
 ```
 
 Verify:
+
 ```bash
 curl -X POST http://localhost:8547 \
   -H "Content-Type: application/json" \
@@ -99,6 +102,7 @@ impl Counter {
 ```
 
 Deploy:
+
 ```bash
 cargo stylus deploy \
   --private-key <PRIVATE_KEY> \
@@ -150,6 +154,7 @@ stylus-trace --help
 ```
 
 Commands:
+
 - `capture`
 - `validate`
 - `schema`
