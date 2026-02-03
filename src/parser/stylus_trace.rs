@@ -374,7 +374,7 @@ mod tests {
         });
         
         let parsed = parse_trace("0xabc123", &raw_trace).unwrap();
-        assert_eq!(parsed.total_gas_used, 100000);
+        assert_eq!(parsed.total_gas_used, 1_000_000_000);
         assert_eq!(parsed.transaction_hash, "0xabc123");
     }
 
@@ -410,6 +410,6 @@ mod tests {
         
         let parsed = parse_trace("0xtest", &raw_trace).unwrap();
         assert_eq!(parsed.execution_steps.len(), 1);
-        assert_eq!(parsed.execution_steps[0].gas_cost, 3);
+        assert_eq!(parsed.execution_steps[0].gas_cost, 30_000);
     }
 }

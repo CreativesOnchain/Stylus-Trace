@@ -129,16 +129,14 @@ pub fn generate_flamegraph(
     ));
  
     // Render Nodes (Inverted: Root at bottom)
-    render_node(
-        &root,
-        0,
-        0.0,
-        width as f64,
-        &mut svg_content,
-        height_per_level,
+    let mut ctx = RenderContext {
+        output: &mut svg_content,
+        line_height: height_per_level,
         graph_height,
         mapper,
-    );
+    };
+
+    render_node(&root, 0, 0.0, width as f64, &mut ctx);
 
     // Render Legend
     render_legend(&mut svg_content, graph_height);
@@ -210,15 +208,19 @@ fn get_ansi_color(name: &str) -> &'static str {
     }
 }
 
+struct RenderContext<'a> {
+    output: &'a mut String,
+    line_height: usize,
+    graph_height: usize,
+    mapper: Option<&'a SourceMapper>,
+}
+
 fn render_node(
     node: &Node,
     level: usize,
     x: f64,
     w: f64,
-    out: &mut String,
-    h: usize,
-    graph_height: usize,
-    mapper: Option<&SourceMapper>,
+    ctx: &mut RenderContext,
 ) {
     if w < 0.5 {
         return;
@@ -228,41 +230,33 @@ fn render_node(
 
     // Y position (Inverted: Graph Bottom - (Level * Height))
     // We add margin for title (30px)
-    let y = graph_height - ((level + 1) * h) + 30;
+    let y = (ctx.graph_height as f64) - (level as f64 * ctx.line_height as f64) - (ctx.line_height as f64) + 30.0;
 
-    // Draw Rect
-    let gas_val = node.value / 10_000;
-    
-    // Resolve source location if mapper and PC are available
-    let source_info = if let (Some(mapper), Some(pc)) = (mapper, node.pc) {
+    let mut tooltip = format!("{}: {} ink / {} gas", node.name, node.value, node.value / 10_000);
+    if let (Some(pc), Some(mapper)) = (node.pc, ctx.mapper) {
         if let Some(loc) = mapper.lookup(pc) {
-            format!(" | {}:{}", loc.file.split('/').next_back().unwrap_or(&loc.file), loc.line.unwrap_or(0))
-        } else {
-            "".to_string()
+            tooltip = format!("{} | {}:{}", tooltip, loc.file.split('/').next_back().unwrap_or(&loc.file), loc.line.unwrap_or(0));
         }
-    } else {
-        "".to_string()
-    };
+    }
 
-    out.push_str(&format!(
-        r#"<rect x="{:.2}" y="{}" width="{:.2}" height="{}" fill="{}" class="func"><title>{} ({} ink / {} gas){}</title></rect>"#,
-        x, y, w, h, color, node.name, node.value, gas_val, source_info
+    ctx.output.push_str(&format!(
+        r#"<rect x="{:.2}" y="{:.2}" width="{:.2}" height="{}" fill="{}" stroke="white" stroke-width="0.5" class="func">"#,
+        x, y, w, ctx.line_height, color
     ));
+    ctx.output.push_str(&format!(r#"<title>{}</title></rect>"#, tooltip));
 
-    // Draw Text (if wide enough)
     if w > 35.0 {
-        // Check if name fits
         let char_width = 7.0;
         let max_chars = (w / char_width) as usize;
         let display_name = if node.name.len() > max_chars && max_chars > 3 {
-             format!("{}...", &node.name[0..max_chars - 3])
+            format!("{}...", &node.name[0..max_chars.saturating_sub(3)])
         } else {
-             node.name.clone()
+            node.name.clone()
         };
         
         if !display_name.is_empty() {
-             out.push_str(&format!(
-                r#"<text x="{:.2}" y="{}" dx="4" dy="14" font-size="12" fill="white" pointer-events="none">{}</text>"#,
+            ctx.output.push_str(&format!(
+                r#"<text x="{:.2}" y="{:.2}" dx="4" dy="14" font-size="12" fill="white" pointer-events="none">{}</text>"#,
                 x, y, display_name
             ));
         }
@@ -275,17 +269,10 @@ fn render_node(
 
     for child in children_vec {
         let child_w = (child.value as f64 / node.value as f64) * w;
-            render_node(
-                child,
-                level + 1,
-                current_x,
-                child_w,
-                out,
-                h,
-                graph_height,
-                mapper,
-            );
-        current_x += child_w;
+        if child_w > 0.0 {
+            render_node(child, level + 1, current_x, child_w, ctx);
+            current_x += child_w;
+        }
     }
 }
 
