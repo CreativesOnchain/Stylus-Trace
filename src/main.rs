@@ -69,6 +69,14 @@ enum Commands {
         /// Use Stylus Ink units (scaled by 10,000)
         #[arg(long)]
         ink: bool,
+
+        /// Path to WASM binary with debug symbols (for source-to-line mapping)
+        #[arg(long)]
+        wasm: Option<PathBuf>,
+
+        /// Optional tracer name (defaults to "stylusTracer" if omitted)
+        #[arg(long)]
+        tracer: Option<String>,
     },
     
     /// Validate a profile JSON file
@@ -110,6 +118,8 @@ fn main() -> Result<()> {
             width,
             summary,
             ink,
+            wasm,
+            tracer,
         } => {
             
             // Create flamegraph config
@@ -136,8 +146,9 @@ fn main() -> Result<()> {
                 top_paths,
                 flamegraph_config: fg_config.map(|c| c.with_ink(ink)),
                 print_summary: summary,
-                tracer: None,
+                tracer,
                 ink,
+                wasm,
             };
             
             // Validate args first

@@ -52,11 +52,16 @@ impl RpcClient {
         
         info!("Fetching trace for transaction: {}", tx_hash);
         
-        // Build params based on tracer
-        let tracer_name = tracer.unwrap_or("stylusTracer");
+        // Build params based on tracer (defaulting to stylusTracer)
+        let mut params_obj = serde_json::Map::new();
+        params_obj.insert(
+            "tracer".to_string(), 
+            serde_json::json!(tracer.unwrap_or("stylusTracer"))
+        );
+        
         let params = serde_json::json!([
             tx_hash,
-            { "tracer": tracer_name }
+            params_obj
         ]);
         
         // Build RPC request

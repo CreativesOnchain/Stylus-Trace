@@ -40,6 +40,10 @@ pub struct ExecutionStep {
     /// End Ink (specific to stylusTracer)
     #[serde(default, rename = "endInk")]
     pub end_ink: Option<u64>,
+
+    /// Program Counter / Offset (needed for source mapping)
+    #[serde(default)]
+    pub pc: u64,
 }
 
 /// Parsed trace data (internal representation)
@@ -97,8 +101,9 @@ pub fn parse_trace(
     
     // Extract total gas used (Standardize to Ink)
     let mut total_gas_used = extract_total_gas(&trace_obj)?;
-    if !is_stylus_tracer && total_gas_used < 1_000_000_000 {
-        // Only scale if it looks like EVM gas (unlikely to be 10^9 EVM gas in a trace)
+    
+    // Total gas from RPC is always in EVM units. Scale to Ink for internal standardization.
+    if total_gas_used < 1_000_000_000_000 { // 100M Gas limit is safe
         total_gas_used *= 10_000;
     }
     
@@ -215,7 +220,9 @@ fn parse_steps_array(steps_array: &[serde_json::Value]) -> Result<Vec<ExecutionS
     
     for (index, step_value) in steps_array.iter().enumerate() {
         match serde_json::from_value::<ExecutionStep>(step_value.clone()) {
-            Ok(step) => steps.push(step),
+            Ok(step) => {
+                steps.push(step)
+            },
             Err(e) => {
                 // Log but don't fail - some steps may be malformed
                 warn!("Failed to parse step {}: {}", index, e);
@@ -259,10 +266,32 @@ fn parse_gas_value(value: &str) -> Result<u64, ParseError> {
 /// Profile ready for JSON serialization
 pub fn to_profile(
     parsed_trace: &ParsedTrace,
-    hot_paths: Vec<super::schema::HotPath>,
+    mut hot_paths: Vec<super::schema::HotPath>,
+    mapper: Option<&super::source_map::SourceMapper>,
 ) -> Profile {
     use chrono::Utc;
     
+    // If mapper is available, enrich hot paths with source information
+    if let Some(mapper) = mapper {
+        for path in &mut hot_paths {
+            if let Some(hint) = &path.source_hint {
+                // The PC was temporarily stored in the function field as "0x..." 
+                if let Some(pc_str) = &hint.function {
+                    if let Some(pc) = pc_str.strip_prefix("0x").and_then(|h| u64::from_str_radix(h, 16).ok()) {
+                        if let Some(loc) = mapper.lookup(pc) {
+                            path.source_hint = Some(super::schema::SourceHint {
+                                file: loc.file,
+                                line: loc.line,
+                                column: loc.column,
+                                function: loc.function,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     Profile {
         version: SCHEMA_VERSION.to_string(),
         transaction_hash: parsed_trace.transaction_hash.clone(),

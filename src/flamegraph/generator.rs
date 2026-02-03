@@ -7,6 +7,7 @@
 
 use crate::aggregator::stack_builder::CollapsedStack;
 use crate::utils::error::FlamegraphError;
+use crate::parser::source_map::SourceMapper;
 use log::info;
 use std::collections::HashMap;
 
@@ -49,6 +50,7 @@ impl FlamegraphConfig {
 struct Node {
     name: String,
     value: u64,
+    pc: Option<u64>,
     children: HashMap<String, Node>,
 }
 
@@ -57,18 +59,22 @@ impl Node {
         Self {
             name,
             value: 0,
+            pc: None,
             children: HashMap::new(),
         }
     }
 
-    fn insert(&mut self, stack: &[&str], value: u64) {
+    fn insert(&mut self, stack: &[&str], value: u64, pc: Option<u64>) {
         self.value += value;
+        if pc.is_some() {
+            self.pc = pc;
+        }
         if let Some((head, tail)) = stack.split_first() {
             let child = self
                 .children
                 .entry(head.to_string())
                 .or_insert_with(|| Node::new(head.to_string()));
-            child.insert(tail, value);
+            child.insert(tail, value, pc);
         }
     }
 }
@@ -77,6 +83,7 @@ impl Node {
 pub fn generate_flamegraph(
     stacks: &[CollapsedStack],
     config: Option<&FlamegraphConfig>,
+    mapper: Option<&SourceMapper>,
 ) -> Result<String, FlamegraphError> {
     if stacks.is_empty() {
         return Err(FlamegraphError::EmptyStacks);
@@ -90,7 +97,7 @@ pub fn generate_flamegraph(
     for stack in stacks {
         // format: "a;b;c" and we have weight separately
         let stack_parts: Vec<&str> = stack.stack.split(';').collect();
-        root.insert(&stack_parts, stack.weight);
+        root.insert(&stack_parts, stack.weight, stack.last_pc);
     }
 
     // Calculate depth
@@ -130,6 +137,7 @@ pub fn generate_flamegraph(
         &mut svg_content,
         height_per_level,
         graph_height,
+        mapper,
     );
 
     // Render Legend
@@ -210,6 +218,7 @@ fn render_node(
     out: &mut String,
     h: usize,
     graph_height: usize,
+    mapper: Option<&SourceMapper>,
 ) {
     if w < 0.5 {
         return;
@@ -223,9 +232,21 @@ fn render_node(
 
     // Draw Rect
     let gas_val = node.value / 10_000;
+    
+    // Resolve source location if mapper and PC are available
+    let source_info = if let (Some(mapper), Some(pc)) = (mapper, node.pc) {
+        if let Some(loc) = mapper.lookup(pc) {
+            format!(" | {}:{}", loc.file.split('/').next_back().unwrap_or(&loc.file), loc.line.unwrap_or(0))
+        } else {
+            "".to_string()
+        }
+    } else {
+        "".to_string()
+    };
+
     out.push_str(&format!(
-        r#"<rect x="{:.2}" y="{}" width="{:.2}" height="{}" fill="{}" class="func"><title>{} ({} ink / {} gas)</title></rect>"#,
-        x, y, w, h, color, node.name, node.value, gas_val
+        r#"<rect x="{:.2}" y="{}" width="{:.2}" height="{}" fill="{}" class="func"><title>{} ({} ink / {} gas){}</title></rect>"#,
+        x, y, w, h, color, node.name, node.value, gas_val, source_info
     ));
 
     // Draw Text (if wide enough)
@@ -262,6 +283,7 @@ fn render_node(
                 out,
                 h,
                 graph_height,
+                mapper,
             );
         current_x += child_w;
     }
@@ -298,51 +320,66 @@ fn render_legend(out: &mut String, graph_height: usize) {
 }
 
 /// Create a rich text summary with percentages and table formatting
-pub fn generate_text_summary(stacks: &[CollapsedStack], max_lines: usize, _ink_mode: bool, total_execution_gas: u64) -> String {
+pub fn generate_text_summary(hot_paths: &[crate::parser::schema::HotPath], max_lines: usize, _ink_mode: bool) -> String {
     let mut lines = Vec::new();
     
     lines.push("  🚀 EXECUTION HOT PATHS".to_string());
-    lines.push("  ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━┓".to_string());
-    lines.push(format!("  ┃ {:<42} ┃ {:^12} ┃ {:^12} ┃ {:^7} ┃", "Execution Stack (Hottest First)", "GAS", "INK (x10k)", "%" ));
-    lines.push("  ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━╋━━━━━━━━━┫".to_string());
+    lines.push("  ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓".to_string());
+    lines.push(format!("  ┃ {:<42} ┃ {:^12} ┃ {:^12} ┃ {:^7} ┃ {:^19} ┃", "Execution Stack (Hottest First)", "GAS", "INK (x10k)", "%", "Source Location" ));
+    lines.push("  ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━╋━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━┫".to_string());
 
-    let total_gas = total_execution_gas.max(1);
-
-    for stack in stacks.iter().take(max_lines) {
-        let weight_ink = stack.weight;
-        let weight_gas = stack.weight / 10_000;
-        let percentage = (stack.weight as f64 / total_gas as f64) * 100.0;
+    for path in hot_paths.iter().take(max_lines) {
+        let weight_ink = path.gas; // Internal unit is Ink
+        let weight_gas = path.gas / 10_000;
+        let percentage = path.percentage;
         
-        let op_name = stack.stack.split(';').next_back().unwrap_or(&stack.stack);
+        let op_name = path.stack.split(';').next_back().unwrap_or(&path.stack);
         let color = get_ansi_color(op_name);
         let reset = "\x1b[0m";
 
         // Truncate stack if too long for display
-        let display_stack = if stack.stack.len() > 40 {
-            format!("...{}", &stack.stack[stack.stack.len() - 37..])
+        let display_stack = if path.stack.len() > 40 {
+            format!("...{}", &path.stack[path.stack.len() - 37..])
         } else {
-            stack.stack.clone()
+            path.stack.clone()
+        };
+        
+        // Format source hint if available
+        let source_info = if let Some(hint) = &path.source_hint {
+            let file_name = hint.file.split('/').next_back().unwrap_or(&hint.file);
+            if let Some(line) = hint.line {
+                format!("{}:{}", file_name, line)
+            } else {
+                file_name.to_string()
+            }
+        } else {
+            "-".to_string()
+        };
+        let display_source = if source_info.len() > 19 {
+            format!("...{}", &source_info[source_info.len() - 16..])
+        } else {
+            source_info
         };
 
         lines.push(format!(
-            "  ┃ {}{:<42}{} ┃ {:>12} ┃ {:>12} ┃ {:>6.1}% ┃",
-            color, display_stack, reset, weight_gas, weight_ink, percentage
+            "  ┃ {}{:<42}{} ┃ {:>12} ┃ {:>12} ┃ {:>6.1}% ┃ {:<19} ┃",
+            color, display_stack, reset, weight_gas, weight_ink, percentage, display_source
         ));
     }
     
-    lines.push("  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━┻━━━━━━━━━┛".to_string());
+    lines.push("  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━┻━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━┛".to_string());
     
     // Add Simplified Flamegraph section
     lines.push("".to_string());
     lines.push("  🔥 SIMPLIFIED FLAMEGRAPH".to_string());
     lines.push("  root ██████████████████████████████████████████████████ 100%".to_string());
     
-    for stack in stacks.iter().take(5) {
-        let percentage = (stack.weight as f64 / total_gas as f64) * 100.0;
+    for path in hot_paths.iter().take(5) {
+        let percentage = path.percentage;
         let bar_width = (percentage / 2.0) as usize; // Max 50 chars
         let bar = "█".repeat(bar_width);
         
-        let op_name = stack.stack.split(';').next_back().unwrap_or(&stack.stack);
+        let op_name = path.stack.split(';').next_back().unwrap_or(&path.stack);
         let color = get_ansi_color(op_name);
         let reset = "\x1b[0m";
         
@@ -352,9 +389,9 @@ pub fn generate_text_summary(stacks: &[CollapsedStack], max_lines: usize, _ink_m
         ));
     }
 
-    if stacks.len() > max_lines {
+    if hot_paths.len() > max_lines {
         lines.push("".to_string());
-        lines.push(format!("   (Showing top {} of {} unique paths)", max_lines, stacks.len()));
+        lines.push(format!("   (Showing top {} of {} unique paths)", max_lines, hot_paths.len()));
     }
     
     lines.join("\n")

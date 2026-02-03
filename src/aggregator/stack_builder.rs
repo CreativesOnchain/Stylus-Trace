@@ -20,14 +20,17 @@ pub struct CollapsedStack {
     
     /// Weight (gas consumed by this stack)
     pub weight: u64,
+
+    /// Last Program Counter / Offset associated with this stack
+    pub last_pc: Option<u64>,
 }
 
 impl CollapsedStack {
     /// Create a new collapsed stack
     ///
     /// **Public** - constructor
-    pub fn new(stack: String, weight: u64) -> Self {
-        Self { stack, weight }
+    pub fn new(stack: String, weight: u64, last_pc: Option<u64>) -> Self {
+        Self { stack, weight, last_pc }
     }
     
 }
@@ -52,8 +55,8 @@ pub fn build_collapsed_stacks(parsed_trace: &ParsedTrace) -> Vec<CollapsedStack>
     debug!("Building collapsed stacks from {} execution steps", 
            parsed_trace.execution_steps.len());
     
-    // Map to aggregate stacks: stack_string -> total_weight
-    let mut stack_map: HashMap<String, u64> = HashMap::new();
+    // Map to aggregate stacks: stack_string -> (total_weight, last_pc)
+    let mut stack_map: HashMap<String, (u64, u64)> = HashMap::new();
     
     // Current call stack (tracks function hierarchy)
     let mut call_stack: Vec<String> = Vec::new();
@@ -81,8 +84,14 @@ pub fn build_collapsed_stacks(parsed_trace: &ParsedTrace) -> Vec<CollapsedStack>
                 HostIoType::Create => "create",
                 HostIoType::Log => "emit_log",
                 HostIoType::SelfDestruct => "selfdestruct",
-                HostIoType::AccountBalance => "msg_balance",
+                HostIoType::AccountBalance => "account_balance",
                 HostIoType::BlockHash => "block_hash",
+                HostIoType::NativeKeccak256 => "native_keccak256",
+                HostIoType::ReadArgs => "read_args",
+                HostIoType::WriteResult => "write_result",
+                HostIoType::MsgValue => "msg_value",
+                HostIoType::MsgSender => "msg_sender",
+                HostIoType::MsgReentrant => "msg_reentrant",
                 HostIoType::Other => "other",
             }
         } else {
@@ -108,16 +117,18 @@ pub fn build_collapsed_stacks(parsed_trace: &ParsedTrace) -> Vec<CollapsedStack>
             format!("{};{}", call_stack.join(";"), operation)
         };
         
-        // FIXED: Always add to map, accumulate all gas costs (even 0)
-        *stack_map.entry(stack_str).or_insert(0) += step.gas_cost;
-        
-
+        // Always add to map, accumulate all gas costs (even 0)
+        let entry = stack_map.entry(stack_str).or_insert((0, 0));
+        entry.0 += step.gas_cost;
+        entry.1 = step.pc; // Update with latest PC
     }
+    
+    // CURRENT CHANGE: stack_map changed from HashMap<String, u64> to HashMap<String, (u64, u64)>
     
     // Convert map to vector and sort by weight (descending)
     let mut stacks: Vec<CollapsedStack> = stack_map
         .into_iter()
-        .map(|(stack, weight)| CollapsedStack::new(stack, weight))
+        .map(|(stack, (weight, pc))| CollapsedStack::new(stack, weight, Some(pc)))
         .collect();
     
     stacks.sort_by(|a, b| b.weight.cmp(&a.weight));

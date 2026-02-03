@@ -22,6 +22,13 @@ pub enum HostIoType {
     SelfDestruct,
     AccountBalance,
     BlockHash,
+    // Stylus specific
+    NativeKeccak256,
+    ReadArgs,
+    WriteResult,
+    MsgValue,
+    MsgSender,
+    MsgReentrant,
     Other,
 }
 
@@ -42,8 +49,12 @@ impl std::str::FromStr for HostIoType {
             "selfdestruct" => Self::SelfDestruct,
             "balance" | "account_balance" => Self::AccountBalance,
             "blockhash" | "block_hash" => Self::BlockHash,
-            "native_keccak256" | "keccak256" => Self::Other,
-            "write_result" | "read_args" | "msg_value" | "msg_sender" | "msg_reentrant" => Self::Other,
+            "native_keccak256" | "keccak256" => Self::NativeKeccak256,
+            "read_args" | "calldatacopy" => Self::ReadArgs,
+            "write_result" | "return" => Self::WriteResult,
+            "msg_value" | "callvalue" => Self::MsgValue,
+            "msg_sender" | "caller" => Self::MsgSender,
+            "msg_reentrant" => Self::MsgReentrant,
             _ => Self::Other,
         })
     }
@@ -130,6 +141,12 @@ impl HostIoStats {
                     HostIoType::SelfDestruct => "selfdestruct",
                     HostIoType::AccountBalance => "account_balance",
                     HostIoType::BlockHash => "block_hash",
+                    HostIoType::NativeKeccak256 => "native_keccak256",
+                    HostIoType::ReadArgs => "read_args",
+                    HostIoType::WriteResult => "write_result",
+                    HostIoType::MsgValue => "msg_value",
+                    HostIoType::MsgSender => "msg_sender",
+                    HostIoType::MsgReentrant => "msg_reentrant",
                     HostIoType::Other => "other",
                 };
                 (name.to_string(), *v)
