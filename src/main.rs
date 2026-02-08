@@ -6,20 +6,13 @@
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use env_logger::Env;
-use log::error;
 use std::path::PathBuf;
 
-mod aggregator;
 mod commands;
-mod flamegraph;
-mod output;
-mod parser;
-mod rpc;
-mod utils;
 
 use commands::{execute_capture, validate_args, CaptureArgs};
-use flamegraph::{FlamegraphConfig, FlamegraphPalette};
-use utils::config::SCHEMA_VERSION;
+use stylus_trace_studio::flamegraph::FlamegraphConfig;
+use stylus_trace_studio::utils::config::SCHEMA_VERSION;
 
 /// Stylus Trace Studio - Performance profiling for Arbitrum Stylus
 #[derive(Parser, Debug)]
@@ -64,9 +57,6 @@ enum Commands {
         #[arg(long)]
         title: Option<String>,
         
-        /// Flamegraph color palette (hot, mem, io, java, consistent)
-        #[arg(long, default_value = "hot")]
-        palette: String,
         
         /// Flamegraph width in pixels
         #[arg(long, default_value = "1200")]
@@ -75,6 +65,18 @@ enum Commands {
         /// Print text summary to stdout
         #[arg(long)]
         summary: bool,
+
+        /// Use Stylus Ink units (scaled by 10,000)
+        #[arg(long)]
+        ink: bool,
+
+        /// Path to WASM binary with debug symbols (for source-to-line mapping)
+        #[arg(long)]
+        wasm: Option<PathBuf>,
+
+        /// Optional tracer name (defaults to "stylusTracer" if omitted)
+        #[arg(long)]
+        tracer: Option<String>,
     },
     
     /// Validate a profile JSON file
@@ -112,12 +114,13 @@ fn main() -> Result<()> {
             flamegraph,
             top_paths,
             title,
-            palette,
+
             width,
             summary,
+            ink,
+            wasm,
+            tracer,
         } => {
-            // Parse palette
-            let palette_enum = parse_palette(&palette);
             
             // Create flamegraph config
             let fg_config = if flamegraph.is_some() {
@@ -127,7 +130,7 @@ fn main() -> Result<()> {
                     config = config.with_title(title_str);
                 }
                 
-                config = config.with_palette(palette_enum).with_width(width);
+                config.width = width;
                 
                 Some(config)
             } else {
@@ -141,9 +144,11 @@ fn main() -> Result<()> {
                 output_json: output,
                 output_svg: flamegraph,
                 top_paths,
-                flamegraph_config: fg_config,
+                flamegraph_config: fg_config.map(|c| c.with_ink(ink)),
                 print_summary: summary,
-                tracer: None,  // FIXED: Use default opcode tracer
+                tracer,
+                ink,
+                wasm,
             };
             
             // Validate args first
@@ -169,28 +174,13 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-/// Parse palette string to enum
-///
-/// **Private** - internal helper
-fn parse_palette(palette_str: &str) -> FlamegraphPalette {
-    match palette_str.to_lowercase().as_str() {
-        "hot" => FlamegraphPalette::Hot,
-        "mem" => FlamegraphPalette::Mem,
-        "io" => FlamegraphPalette::Io,
-        "java" => FlamegraphPalette::Java,
-        "consistent" => FlamegraphPalette::Consistent,
-        _ => {
-            eprintln!("Warning: Unknown palette '{}', using 'hot'", palette_str);
-            FlamegraphPalette::Hot
-        }
-    }
-}
+
 
 /// Validate a profile JSON file
 ///
 /// **Private** - internal command implementation
 fn validate_profile_file(file_path: PathBuf) -> Result<()> {
-    use output::read_profile;
+    use stylus_trace_studio::output::read_profile;
     
     println!("Validating profile: {}", file_path.display());
     

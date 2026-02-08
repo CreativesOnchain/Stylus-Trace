@@ -1,6 +1,6 @@
 [package]
-name = "stylus-trace"
-version = "0.1.0"
+name = "stylus-trace-studio"
+version = "0.1.2"
 edition = "2021"
 
 exclude = [
@@ -12,12 +12,12 @@ exclude = [
   "profiles/*",
   "node_modules/*"
 ]
-authors = ["Stylus Trace Team"]
+authors = ["Creatives Onchain"]
 license = "MIT"
 description = "Performance profiling and flamegraph generation for Arbitrum Stylus transactions"
-repository = "https://github.com/Timi16/stylus-trace"
-homepage = "https://github.com/Timi16/stylus-trace"
-documentation = "https://docs.rs/stylus-trace"
+repository = "https://github.com/CreativesOnchain/Stylus-Trace"
+homepage = "https://github.com/CreativesOnchain/Stylus-Trace"
+documentation = "https://docs.rs/Stylus-Trace"
 readme = "README.md"
 keywords = ["arbitrum", "stylus", "profiling", "flamegraph", "wasm"]
 categories = ["command-line-utilities", "development-tools"]
@@ -32,7 +32,10 @@ thiserror = "1.0"
 env_logger = "0.11"
 log = "0.4"
 chrono = { version = "0.4", features = ["serde"] }
-inferno = { version = "0.11", default-features = false, features = ["nameattr"] }
+addr2line = "0.21"
+object = { version = "0.32", features = ["wasm"] }
+gimli = "0.28"
+
 
 [dev-dependencies]
 tempfile = "3.10"

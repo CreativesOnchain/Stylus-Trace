@@ -30,18 +30,22 @@ pub enum ParseError {
     #[error("Invalid trace format: {0}")]
     InvalidFormat(String),
     
+/*
     #[error("Unsupported schema version: {0}")]
     UnsupportedVersion(String),
     
     #[error("Missing required field: {0}")]
     MissingField(String),
+*/
 }
 
 /// Errors that can occur during flamegraph generation
 #[derive(Error, Debug)]
 pub enum FlamegraphError {
+/*
     #[error("Failed to generate flamegraph: {0}")]
     GenerationFailed(String),
+*/
     
     #[error("Empty stack data")]
     EmptyStacks,

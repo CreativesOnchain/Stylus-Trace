@@ -63,5 +63,6 @@ pub struct HotPath {
 pub struct SourceHint {
     pub file: String,
     pub line: Option<u32>,
+    pub column: Option<u32>,
     pub function: Option<String>,
 }

@@ -131,6 +131,7 @@ TX_HASH=$(cast send $CONTRACT_ADDRESS \
 stylus-trace capture \
   --rpc http://localhost:8547 \
   --tx $TX_HASH \
+  --wasm ./target/wasm32-unknown-unknown/release/my_contract.wasm \
   --output profile.json \
   --flamegraph flamegraph.svg \
   --summary
@@ -147,6 +148,32 @@ xdg-open flamegraph.svg  # Linux
 
 ---
 
+## Source-to-Line Mapping
+
+To enable line-level resolution in your reports and flamegraphs, you must compile your Stylus contract with **DWARF debug symbols**.
+
+### 1. Enable Debug Info
+Update your contract's `Cargo.toml`:
+
+```toml
+[profile.release]
+debug = true
+```
+
+### 2. Build Contract
+```bash
+cargo build --release --target wasm32-unknown-unknown
+```
+
+### 3. Capture with WASM
+Provide the path to the compiled `.wasm` file using the `--wasm` flag:
+
+```bash
+stylus-trace capture --tx <TX_HASH> --wasm path/to/contract.wasm --summary
+```
+
+---
+
 ## CLI Command Reference
 
 ```bash
@@ -154,11 +181,17 @@ stylus-trace --help
 ```
 
 Commands:
-
-- `capture`
-- `validate`
-- `schema`
-- `version`
+- `capture`: Profile a transaction and generate reports.
+    - `--rpc`: RPC endpoint URL.
+    - `--tx`: Transaction hash to profile.
+    - `--wasm`: Path to WASM binary (for source mapping).
+    - `--tracer`: Optional tracer name (e.g., `stylusTracer`).
+    - `--output`: Path to save JSON profile.
+    - `--flamegraph`: Path to save SVG flamegraph.
+    - `--ink`: Display costs in Stylus Ink (scaled by 10,000).
+- `validate`: Validate a profile JSON file against the schema.
+- `schema`: Display the JSON schema for profiles.
+- `version`: Display version information.
 
 ---
 

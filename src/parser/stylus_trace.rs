@@ -8,29 +8,21 @@ use super::schema::Profile;
 use crate::utils::error::ParseError;
 use crate::utils::config::SCHEMA_VERSION;
 use log::{debug, warn};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 /// Raw execution step from stylusTracer
 ///
 /// This represents a single step in the WASM execution.
 /// The exact fields depend on the stylusTracer implementation.
+/// Raw execution step from stylusTracer or standard EVM tracer
 #[derive(Debug, Clone, Deserialize)]
 pub struct ExecutionStep {
-    /// Program counter / instruction pointer
-    #[serde(default)]
-    pub pc: u64,  
-    
-    /// Gas remaining at this step
-    #[serde(default)]
-    pub gas: u64,
-    
-    /// Gas cost of this operation
-    /// FIXED: Handle both camelCase and snake_case
+    /// Gas cost of this operation (in Ink if stylusTracer, or EVM gas if standard)
     #[serde(default, alias = "gasCost")]
     pub gas_cost: u64,  
     
-    /// Operation name (if available)
-    #[serde(default)]
+    /// Operation name
+    #[serde(default, alias = "name")]
     pub op: Option<String>, 
     
     /// Stack depth
@@ -40,15 +32,26 @@ pub struct ExecutionStep {
     /// Function name (if debug symbols present)
     #[serde(default)]
     pub function: Option<String>, 
+
+    /// Start Ink (specific to stylusTracer)
+    #[serde(default, rename = "startInk")]
+    pub start_ink: Option<u64>,
+
+    /// End Ink (specific to stylusTracer)
+    #[serde(default, rename = "endInk")]
+    pub end_ink: Option<u64>,
+
+    /// Program Counter / Offset (needed for source mapping)
+    #[serde(default)]
+    pub pc: u64,
 }
 
 /// Parsed trace data (internal representation)
-///
-/// **Private** - only used during parsing, not exposed
+/// Standardizes all gas/ink values to 10,000x base (Stylus Ink)
 #[derive(Debug, Clone)]
 pub struct ParsedTrace {
     pub transaction_hash: String,
-    pub total_gas_used: u64,
+    pub total_gas_used: u64, // In Ink
     pub execution_steps: Vec<ExecutionStep>,
     pub hostio_stats: HostIoStats,
 }
@@ -75,17 +78,17 @@ pub fn parse_trace(
     debug!("Parsing trace for transaction: {}", tx_hash);
     
     // Handle different trace formats
-    let trace_obj = match raw_trace {
+    let (trace_obj, is_stylus_tracer) = match raw_trace {
         // Format 1: Direct object with structLogs/gasUsed
-        serde_json::Value::Object(obj) => obj.clone(),
+        serde_json::Value::Object(obj) => (obj.clone(), obj.contains_key("result") && obj["result"].is_array()),
         
-        // Format 2: Array of structLogs (wrap it)
-        serde_json::Value::Array(logs) => {
-            warn!("Trace is array format, wrapping as structLogs");
+        // Format 2: Array of HostIOs (typical for stylusTracer result)
+        serde_json::Value::Array(_logs) => {
+            debug!("Trace is array format (stylusTracer), wrapping");
             let mut wrapper = serde_json::Map::new();
-            wrapper.insert("structLogs".to_string(), raw_trace.clone());
+            wrapper.insert("steps".to_string(), raw_trace.clone());
             wrapper.insert("gasUsed".to_string(), serde_json::json!(0));
-            wrapper
+            (wrapper, true)
         }
         
         // Format 3: Invalid
@@ -96,22 +99,62 @@ pub fn parse_trace(
         }
     };
     
-    // Extract total gas used
-    let total_gas_used = extract_total_gas(&trace_obj)?;
+    // Extract total gas used (Standardize to Ink)
+    let mut total_gas_used = extract_total_gas(&trace_obj)?;
+    
+    // Total gas from RPC is always in EVM units. Scale to Ink for internal standardization.
+    if total_gas_used < 1_000_000_000_000 { // 100M Gas limit is safe
+        total_gas_used *= 10_000;
+    }
     
     // Extract execution steps
-    let execution_steps = extract_execution_steps(&trace_obj)?;
+    let mut execution_steps = extract_execution_steps(&trace_obj)?;
+    
+    // Post-process steps: calculate costs and scale if needed
+    for step in &mut execution_steps {
+        if let (Some(start), Some(end)) = (step.start_ink, step.end_ink) {
+            step.gas_cost = start.saturating_sub(end);
+        } else if !is_stylus_tracer {
+            step.gas_cost *= 10_000;
+        }
+    }
+
+    if total_gas_used == 0 {
+         total_gas_used = execution_steps.iter().map(|s| s.gas_cost).sum();
+    }
     
     debug!("Parsed {} execution steps", execution_steps.len());
     
     // Extract HostIO statistics
-    let hostio_stats = extract_hostio_events(raw_trace);
+    let mut hostio_stats = extract_hostio_events(raw_trace);
     
-    debug!(
-        "Found {} HostIO calls consuming {} gas",
-        hostio_stats.total_calls(),
-        hostio_stats.total_gas()
-    );
+    // Fallback: If no HostIOs found explicitly, detect from steps
+    if hostio_stats.total_calls() == 0 && !execution_steps.is_empty() {
+        debug!("Explicit hostio field missing, detecting from steps");
+        use super::hostio::{HostIoEvent, HostIoType};
+        
+        for step in &execution_steps {
+            // Priority: op (alias for name) > function > "unknown"
+            let op_name = step.op.as_deref()
+                .or(step.function.as_deref())
+                .unwrap_or("unknown");
+            
+            // Handle formats like "call;SSTORE"
+            let op_part = op_name.split(';').next_back().unwrap_or(op_name);
+            if let Some(io_type) = HostIoType::from_opcode(op_part) {
+                hostio_stats.add_event(HostIoEvent {
+                    io_type,
+                    gas_cost: step.gas_cost,
+                });
+            } else if is_stylus_tracer {
+                // In stylusTracer, everything is a HostIO equivalent
+                hostio_stats.add_event(HostIoEvent {
+                    io_type: op_part.parse().unwrap(),
+                    gas_cost: step.gas_cost,
+                });
+            }
+        }
+    }
     
     Ok(ParsedTrace {
         transaction_hash: tx_hash.to_string(),
@@ -154,7 +197,7 @@ fn extract_execution_steps(
     trace_obj: &serde_json::Map<String, serde_json::Value>,
 ) -> Result<Vec<ExecutionStep>, ParseError> {
     // Try multiple possible field names
-    let step_fields = ["structLogs", "struct_logs", "steps", "trace"];
+    let step_fields = ["structLogs", "struct_logs", "steps", "trace", "result", "logs"];
     
     for field in &step_fields {
         if let Some(steps_value) = trace_obj.get(*field) {
@@ -177,7 +220,9 @@ fn parse_steps_array(steps_array: &[serde_json::Value]) -> Result<Vec<ExecutionS
     
     for (index, step_value) in steps_array.iter().enumerate() {
         match serde_json::from_value::<ExecutionStep>(step_value.clone()) {
-            Ok(step) => steps.push(step),
+            Ok(step) => {
+                steps.push(step)
+            },
             Err(e) => {
                 // Log but don't fail - some steps may be malformed
                 warn!("Failed to parse step {}: {}", index, e);
@@ -221,10 +266,32 @@ fn parse_gas_value(value: &str) -> Result<u64, ParseError> {
 /// Profile ready for JSON serialization
 pub fn to_profile(
     parsed_trace: &ParsedTrace,
-    hot_paths: Vec<super::schema::HotPath>,
+    mut hot_paths: Vec<super::schema::HotPath>,
+    mapper: Option<&super::source_map::SourceMapper>,
 ) -> Profile {
     use chrono::Utc;
     
+    // If mapper is available, enrich hot paths with source information
+    if let Some(mapper) = mapper {
+        for path in &mut hot_paths {
+            if let Some(hint) = &path.source_hint {
+                // The PC was temporarily stored in the function field as "0x..." 
+                if let Some(pc_str) = &hint.function {
+                    if let Some(pc) = pc_str.strip_prefix("0x").and_then(|h| u64::from_str_radix(h, 16).ok()) {
+                        if let Some(loc) = mapper.lookup(pc) {
+                            path.source_hint = Some(super::schema::SourceHint {
+                                file: loc.file,
+                                line: loc.line,
+                                column: loc.column,
+                                function: loc.function,
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     Profile {
         version: SCHEMA_VERSION.to_string(),
         transaction_hash: parsed_trace.transaction_hash.clone(),
@@ -239,15 +306,11 @@ pub fn to_profile(
     }
 }
 
+/*
 /// Validate that we can parse a trace (quick check)
-///
-/// **Public** - used by validate command
-///
-/// # Arguments
-/// * `raw_trace` - Raw JSON to validate
-///
-/// # Returns
-/// Ok if trace appears valid, Err with details if not
+...
+*/
+/*
 pub fn validate_trace_format(raw_trace: &serde_json::Value) -> Result<(), ParseError> {
     let trace_obj = raw_trace.as_object()
         .ok_or_else(|| ParseError::InvalidFormat("Expected JSON object".to_string()))?;
@@ -269,6 +332,7 @@ pub fn validate_trace_format(raw_trace: &serde_json::Value) -> Result<(), ParseE
     
     Ok(())
 }
+*/
 
 #[cfg(test)]
 mod tests {
@@ -310,10 +374,11 @@ mod tests {
         });
         
         let parsed = parse_trace("0xabc123", &raw_trace).unwrap();
-        assert_eq!(parsed.total_gas_used, 100000);
+        assert_eq!(parsed.total_gas_used, 1_000_000_000);
         assert_eq!(parsed.transaction_hash, "0xabc123");
     }
 
+/*
     #[test]
     fn test_validate_trace_format() {
         let valid_trace = json!({
@@ -326,6 +391,7 @@ mod tests {
         });
         assert!(validate_trace_format(&invalid_trace).is_err());
     }
+*/
     
     #[test]
     fn test_parse_camelcase_gas_cost() {
@@ -344,6 +410,6 @@ mod tests {
         
         let parsed = parse_trace("0xtest", &raw_trace).unwrap();
         assert_eq!(parsed.execution_steps.len(), 1);
-        assert_eq!(parsed.execution_steps[0].gas_cost, 3);
+        assert_eq!(parsed.execution_steps[0].gas_cost, 30_000);
     }
 }

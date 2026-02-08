@@ -6,4 +6,4 @@
 pub mod capture;
 
 // Re-export main command functions
-pub use capture::{execute_capture, validate_args, quick_capture, CaptureArgs};
+pub use capture::{execute_capture, validate_args, CaptureArgs};

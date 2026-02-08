@@ -5,7 +5,6 @@ use crate::utils::error::RpcError;
 use crate::utils::config::DEFAULT_RPC_TIMEOUT;
 use log::{debug, info};
 use reqwest::blocking::Client;
-use std::time::Duration;
 
 /// RPC client for fetching trace data from Nitro node
 pub struct RpcClient {
@@ -27,26 +26,21 @@ impl RpcClient {
         })
     }
 
-    /// Create a client with custom timeout
+    // /// Create a client with custom timeout
+/*
     pub fn with_timeout(
         rpc_url: impl Into<String>,
         timeout: Duration,
     ) -> Result<Self, RpcError> {
-        let client = Client::builder()
-            .timeout(timeout)
-            .build()
-            .map_err(RpcError::RequestFailed)?;
-        
-        Ok(Self {
-            client,
-            rpc_url: rpc_url.into(),
-        })
+        // ...
     }
+*/
 
-    /// Fetch trace with default (no tracer)
+/*
     pub fn debug_trace_transaction(&self, tx_hash: &str) -> Result<RawTraceData, RpcError> {
         self.debug_trace_transaction_with_tracer(tx_hash, None)
     }
+*/
     
     /// Fetch trace with optional tracer
     pub fn debug_trace_transaction_with_tracer(
@@ -58,15 +52,17 @@ impl RpcClient {
         
         info!("Fetching trace for transaction: {}", tx_hash);
         
-        // Build params based on tracer
-        let params = if let Some(tracer_name) = tracer {
-            serde_json::json!([
-                tx_hash,
-                { "tracer": tracer_name }
-            ])
-        } else {
-            serde_json::json!([tx_hash])
-        };
+        // Build params based on tracer (defaulting to stylusTracer)
+        let mut params_obj = serde_json::Map::new();
+        params_obj.insert(
+            "tracer".to_string(), 
+            serde_json::json!(tracer.unwrap_or("stylusTracer"))
+        );
+        
+        let params = serde_json::json!([
+            tx_hash,
+            params_obj
+        ]);
         
         // Build RPC request
         let request = serde_json::json!({
