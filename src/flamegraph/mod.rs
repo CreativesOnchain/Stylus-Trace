@@ -6,9 +6,4 @@
 pub mod generator;
 
 // Re-export main types
-pub use generator::{
-    generate_flamegraph,
-    generate_text_summary,
-    FlamegraphConfig,
-
-};
+pub use generator::{generate_flamegraph, generate_text_summary, FlamegraphConfig};

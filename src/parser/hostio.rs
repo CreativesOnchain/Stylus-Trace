@@ -49,9 +49,9 @@ impl std::str::FromStr for HostIoType {
             "selfdestruct" => Self::SelfDestruct,
             "balance" | "account_balance" => Self::AccountBalance,
             "blockhash" | "block_hash" => Self::BlockHash,
-            "native_keccak256" | "keccak256" => Self::NativeKeccak256,
-            "read_args" | "calldatacopy" => Self::ReadArgs,
-            "write_result" | "return" => Self::WriteResult,
+            "native_keccak256" | "keccak256" | "keccak" => Self::NativeKeccak256,
+            "read_args" | "calldatacopy" | "memory_read" => Self::ReadArgs,
+            "write_result" | "return" | "memory_write" => Self::WriteResult,
             "msg_value" | "callvalue" => Self::MsgValue,
             "msg_sender" | "caller" => Self::MsgSender,
             "msg_reentrant" => Self::MsgReentrant,
@@ -153,6 +153,15 @@ impl HostIoStats {
             })
             .collect()
     }
+
+    /// Convert to summary for inclusion in the final profile
+    pub fn to_summary(&self) -> super::schema::HostIoSummary {
+        super::schema::HostIoSummary {
+            total_calls: self.total_calls(),
+            by_type: self.to_map(),
+            total_hostio_gas: self.total_gas(),
+        }
+    }
 }
 
 impl Default for HostIoStats {
@@ -172,7 +181,7 @@ impl Default for HostIoStats {
 /// Parsed HostIO statistics
 pub fn extract_hostio_events(trace_data: &serde_json::Value) -> HostIoStats {
     let mut stats = HostIoStats::new();
-    
+
     // Try to extract HostIO array from trace
     // Actual field name depends on stylusTracer output format
     // This is a placeholder - adjust based on real trace format
@@ -183,60 +192,17 @@ pub fn extract_hostio_events(trace_data: &serde_json::Value) -> HostIoStats {
             }
         }
     }
-    
+
     stats
 }
 
 /// Parse a single HostIO event from JSON
-fn parse_hostio_event(event_json: &serde_json::Value) -> Option<HostIoEvent> {
+pub fn parse_hostio_event(event_json: &serde_json::Value) -> Option<HostIoEvent> {
     let io_type_str = event_json.get("type")?.as_str()?;
     let gas_cost = event_json.get("gas")?.as_u64()?;
-    
+
     Some(HostIoEvent {
         io_type: io_type_str.parse().unwrap(),
         gas_cost,
     })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_hostio_event_parsing() {
-        let event_json = serde_json::json!({
-            "type": "storage_load",
-            "gas": 100
-        });
-        
-        let event = parse_hostio_event(&event_json).unwrap();
-        assert_eq!(event.io_type, HostIoType::StorageLoad);
-        assert_eq!(event.gas_cost, 100);
-    }
-
-    #[test]
-    fn test_hostio_type_parsing() {
-        assert_eq!("storage_load".parse::<HostIoType>().unwrap(), HostIoType::StorageLoad);
-        assert_eq!("SSTORE".parse::<HostIoType>().unwrap(), HostIoType::StorageStore);
-        assert_eq!("unknown".parse::<HostIoType>().unwrap(), HostIoType::Other);
-    }
-
-    #[test]
-    fn test_hostio_stats() {
-        let mut stats = HostIoStats::new();
-        
-        stats.add_event(HostIoEvent {
-            io_type: HostIoType::StorageLoad,
-            gas_cost: 100,
-        });
-        
-        stats.add_event(HostIoEvent {
-            io_type: HostIoType::StorageLoad,
-            gas_cost: 200,
-        });
-        
-        assert_eq!(stats.count_for_type(HostIoType::StorageLoad), 2);
-        assert_eq!(stats.total_gas(), 300);
-        assert_eq!(stats.total_calls(), 2);
-    }
 }

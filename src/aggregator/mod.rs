@@ -5,9 +5,9 @@
 //! - Hot path analysis (top gas consumers)
 //! - Gas distribution statistics
 
-pub mod stack_builder;
 pub mod metrics;
+pub mod stack_builder;
 
 // Re-export main types and functions
+pub use metrics::{calculate_gas_distribution, calculate_hot_paths};
 pub use stack_builder::build_collapsed_stacks;
-pub use metrics::{calculate_hot_paths, calculate_gas_distribution};

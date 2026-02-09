@@ -8,8 +8,8 @@
 
 pub mod hostio;
 pub mod schema;
-pub mod stylus_trace;
 pub mod source_map;
+pub mod stylus_trace;
 
 // Re-export main types
 pub use hostio::HostIoType;
