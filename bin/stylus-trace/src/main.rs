@@ -42,10 +42,11 @@ enum Commands {
         tx: String,
 
         /// Output path for JSON profile
-        #[arg(short, long, default_value = "artifacts/profile.json")]
+        #[arg(short, long, default_value = "profile.json")]
         output: PathBuf,
 
-        #[arg(short, long, default_missing_value = "artifacts/flamegraph.svg", num_args = 0..=1)]
+        /// Output path for SVG flamegraph (optional)
+        #[arg(short, long, default_missing_value = "flamegraph.svg", num_args = 0..=1)]
         flamegraph: Option<PathBuf>,
 
         /// Number of top hot paths to include
@@ -108,17 +109,29 @@ fn main() -> Result<()> {
         Commands::Capture {
             rpc,
             tx,
-            output,
-            flamegraph,
+            mut output,
+            mut flamegraph,
             top_paths,
             title,
-
             width,
             summary,
             ink,
             wasm,
             tracer,
         } => {
+            // Ensure outputs go to artifacts/ if no directory is specified
+            let artifacts_dir = PathBuf::from("artifacts");
+
+            if output.parent().map(|p| p.as_os_str().is_empty()).unwrap_or(true) {
+                output = artifacts_dir.join(output);
+            }
+
+            if let Some(ref mut fg) = flamegraph {
+                if fg.parent().map(|p| p.as_os_str().is_empty()).unwrap_or(true) {
+                    *fg = artifacts_dir.join(&fg);
+                }
+            }
+
             // Create flamegraph config
             let fg_config = if flamegraph.is_some() {
                 let mut config = FlamegraphConfig::new();
