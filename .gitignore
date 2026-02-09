@@ -1,5 +1,10 @@
+.idea
+
+target
 /target
 .DS_Store
 *.svg
 *.json
 profiles/
+flamegraphs.svg
+profile.json
