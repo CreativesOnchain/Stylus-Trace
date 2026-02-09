@@ -66,4 +66,3 @@ pub fn write_svg(svg_content: &str, output_path: impl AsRef<Path>) -> Result<(),
 
     Ok(())
 }
-

@@ -8,21 +8,19 @@
 //! 5. Calculates metrics
 //! 6. Writes output files
 
-use crate::commands::models::{CaptureArgs, GasDisplay};
-use anyhow::{Context, Result};
-use log::{debug, info, warn};
-use std::path::PathBuf;
-use std::time::Instant;
 use crate::aggregator::stack_builder::CollapsedStack;
-use crate::aggregator::{
-    build_collapsed_stacks, calculate_gas_distribution, calculate_hot_paths,
-};
+use crate::aggregator::{build_collapsed_stacks, calculate_gas_distribution, calculate_hot_paths};
+use crate::commands::models::{CaptureArgs, GasDisplay};
 use crate::flamegraph::{generate_flamegraph, generate_text_summary};
 use crate::output::{write_profile, write_svg};
 use crate::parser::{
     parse_trace, schema::HotPath, source_map::SourceMapper, to_profile, ParsedTrace,
 };
 use crate::rpc::RpcClient;
+use anyhow::{Context, Result};
+use log::{debug, info, warn};
+use std::path::PathBuf;
+use std::time::Instant;
 
 /// Execute the capture command
 ///
@@ -317,4 +315,3 @@ pub fn validate_args(args: &CaptureArgs) -> Result<()> {
 
     Ok(())
 }
-

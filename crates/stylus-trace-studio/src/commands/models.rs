@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use crate::flamegraph::FlamegraphConfig;
+use std::path::PathBuf;
 
 /// Arguments for the capture command
 ///

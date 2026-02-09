@@ -1,4 +1,4 @@
-use stylus_trace_studio::flamegraph::generator::{NodeCategory, get_truncated_name};
+use stylus_trace_studio::flamegraph::generator::{get_truncated_name, NodeCategory};
 
 #[test]
 fn test_node_category() {

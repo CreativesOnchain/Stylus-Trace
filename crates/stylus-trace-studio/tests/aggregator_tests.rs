@@ -1,5 +1,7 @@
-use stylus_trace_studio::aggregator::stack_builder::{CollapsedStack, map_hostio_to_label};
-use stylus_trace_studio::aggregator::metrics::{calculate_gas_distribution, calculate_hot_paths, create_hot_path};
+use stylus_trace_studio::aggregator::metrics::{
+    calculate_gas_distribution, calculate_hot_paths, create_hot_path,
+};
+use stylus_trace_studio::aggregator::stack_builder::{map_hostio_to_label, CollapsedStack};
 use stylus_trace_studio::parser::HostIoType;
 
 #[test]

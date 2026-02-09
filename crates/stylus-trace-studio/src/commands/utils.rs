@@ -1,7 +1,7 @@
-use anyhow::Result;
-use std::path::PathBuf;
 use crate::output::read_profile;
 use crate::utils::config::SCHEMA_VERSION;
+use anyhow::Result;
+use std::path::PathBuf;
 
 /// Validate a profile JSON file
 pub fn validate_profile_file(file_path: PathBuf) -> Result<()> {

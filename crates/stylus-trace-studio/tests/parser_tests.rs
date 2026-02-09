@@ -1,6 +1,8 @@
-use stylus_trace_studio::parser::hostio::{HostIoEvent, HostIoStats, HostIoType, parse_hostio_event};
-use stylus_trace_studio::parser::stylus_trace::{extract_total_gas, parse_gas_value, parse_trace};
 use serde_json::json;
+use stylus_trace_studio::parser::hostio::{
+    parse_hostio_event, HostIoEvent, HostIoStats, HostIoType,
+};
+use stylus_trace_studio::parser::stylus_trace::{extract_total_gas, parse_gas_value, parse_trace};
 
 #[test]
 fn test_hostio_event_parsing() {
