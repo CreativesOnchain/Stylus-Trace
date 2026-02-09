@@ -8,3 +8,4 @@ target
 profiles/
 flamegraphs.svg
 profile.json
+artifacts/
