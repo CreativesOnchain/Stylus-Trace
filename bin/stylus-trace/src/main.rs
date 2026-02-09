@@ -41,12 +41,12 @@ enum Commands {
         #[arg(short, long)]
         tx: String,
 
-        /// Output path for JSON profile
-        #[arg(short, long, default_value = "profile.json")]
+        /// Output path for JSON profile (placed in artifacts/ by default)
+        #[arg(short, long, default_value = "artifacts/profile.json")]
         output: PathBuf,
 
-        /// Output path for SVG flamegraph (optional)
-        #[arg(short, long, default_missing_value = "flamegraph.svg", num_args = 0..=1)]
+        /// Output path for SVG flamegraph (placed in artifacts/ by default)
+        #[arg(short, long, default_missing_value = "artifacts/flamegraph.svg", num_args = 0..=1)]
         flamegraph: Option<PathBuf>,
 
         /// Number of top hot paths to include
