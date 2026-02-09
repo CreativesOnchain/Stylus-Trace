@@ -1,0 +1,77 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build - ${{ matrix.platform.os-name }}
+    strategy:
+      matrix:
+        platform:
+          - os-name: Linux-x86_64
+            runs-on: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            bin: stylus-trace
+            asset-name: stylus-trace-linux-x64
+          - os-name: macOS-x86_64
+            runs-on: macos-latest
+            target: x86_64-apple-darwin
+            bin: stylus-trace
+            asset-name: stylus-trace-macos-x64
+          - os-name: macOS-arm64
+            runs-on: macos-latest
+            target: aarch64-apple-darwin
+            bin: stylus-trace
+            asset-name: stylus-trace-macos-arm64
+          - os-name: Windows-x86_64
+            runs-on: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: stylus-trace.exe
+            asset-name: stylus-trace-windows-x64
+
+    runs-on: ${{ matrix.platform.runs-on }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform.target }}
+      
+      - name: Build Binary
+        run: cargo build --release --bin stylus-trace --target ${{ matrix.platform.target }}
+
+      - name: Rename Binary
+        shell: bash
+        run: |
+          cd target/${{ matrix.platform.target }}/release
+          mv ${{ matrix.platform.bin }} ${{ matrix.platform.asset-name }}
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.platform.asset-name }}
+          path: target/${{ matrix.platform.target }}/release/${{ matrix.platform.asset-name }}
+
+  create-release:
+    name: Create Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            stylus-trace-linux-x64/stylus-trace-linux-x64
+            stylus-trace-macos-x64/stylus-trace-macos-x64
+            stylus-trace-macos-arm64/stylus-trace-macos-arm64
+            stylus-trace-windows-x64/stylus-trace-windows-x64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

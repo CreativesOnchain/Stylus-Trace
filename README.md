@@ -1,5 +1,7 @@
 # Stylus Trace
 
+[![CI](https://github.com/CreativesOnchain/Stylus-Trace/actions/workflows/ci.yml/badge.svg)](https://github.com/CreativesOnchain/Stylus-Trace/actions/workflows/ci.yml)
+
 **Performance profiling and flamegraph generation for Arbitrum Stylus transactions.**
 
 Stylus Trace turns opaque Stylus transaction traces into **interactive flamegraphs** and **actionable performance reports**.  
