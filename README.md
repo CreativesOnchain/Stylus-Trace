@@ -2,147 +2,102 @@
 
 [![CI](https://github.com/CreativesOnchain/Stylus-Trace/actions/workflows/ci.yml/badge.svg)](https://github.com/CreativesOnchain/Stylus-Trace/actions/workflows/ci.yml)
 
-**Performance profiling and flamegraph generation for Arbitrum Stylus transactions.**
+**A high-performance profiling tool for Arbitrum Stylus transactions.**
 
-Stylus Trace turns opaque Stylus transaction traces into **interactive flamegraphs** and **actionable performance reports**.  
-Profile gas usage, identify bottlenecks, and catch regressions — all locally using the Arbitrum Nitro dev node.
-
-Built for the **Arbitrum Stylus ecosystem**.
+Stylus Trace turns opaque Stylus transaction traces into **interactive flamegraphs** and **actionable performance reports**. Profile gas usage, identify bottlenecks, and resolve performance regressions using a local development environment.
 
 ---
 
-## Quick Start
+## 🚀 Key Features
 
-### Prerequisites
+- **Interactive Flamegraphs**: Visualize execution paths with interactive SVG snapshots.
+- **Gas & Ink Analysis**: Seamlessly toggle between standard Gas and high-precision Stylus Ink (10,000x) units.
+- **Transaction Dashboards**: Get a "hot path" summary directly in your terminal.
+- **Automated Artifacts**: Built-in organization for profiles and graphs in a dedicated `artifacts/` folder.
+- **Arbitrum Native**: Designed specifically for the Arbitrum Nitro/Stylus execution environment.
 
+---
+
+## 🏗 Project Architecture
+
+Stylus Trace is organized as a Cargo Workspace for modularity and performance:
+
+- `bin/stylus-trace`: The CLI frontend. Optimized for usability and speed.
+- `crates/stylus-trace-studio`: The core library engine published on [crates.io](https://crates.io/crates/stylus-trace-studio).
+- `artifacts/`: Standardized output directory for profiles and flamegraphs (Git ignored).
+
+---
+
+## 📦 Installation
+
+### Via Cargo (Recommended)
+You can install the CLI directly from crates.io:
+```bash
+cargo install stylus-trace-studio
+```
+
+### Build from Source (Host Native)
+If you prefer to build from the latest source code on your machine:
+```bash
+# Clone the repository
+git clone https://github.com/CreativesOnchain/Stylus-Trace.git
+cd Stylus-Trace
+
+# Install from the workspace (Native build, NOT WASM)
+cargo install --path bin/stylus-trace
+```
+
+---
+
+## 🛠 Quick Start
+
+### 1. Prerequisites
+Ensure you have the following installed:
 - **Docker** (for Nitro dev node)
 - **Rust** (1.72+)
 - **Foundry** (`cast`)
-- **Cargo Stylus**
-
-```bash
-cargo install --force cargo-stylus
-```
-
----
-
-### Installation
-
-```bash
-cargo install stylus-trace
-```
-
-Verify:
-```bash
-stylus-trace help
-```
-
----
-
-## Complete Testing Guide
+- **Cargo Stylus** (`cargo install --force cargo-stylus`)
 
 ### Step 1: Start Nitro Dev Node
 
 ```bash
 git clone https://github.com/OffchainLabs/nitro-devnode.git
-cd nitro-devnode
-./run-dev-node.sh
+cd nitro-devnode && ./run-dev-node.sh
 ```
 
-This starts a local Arbitrum node at:
-```
-http://localhost:8547
-```
-
-Verify:
-```bash
-curl -X POST http://localhost:8547 \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}'
-```
-
----
-
-### Step 2: Deploy a Stylus Contract
+### 3. Build & Profile your Contract
+In your **contract's** directory:
 
 ```bash
-cargo stylus new my-contract
-cd my-contract
-```
+# Build the contract to WASM
+cargo build --release --target wasm32-unknown-unknown
 
-Example contract (`src/lib.rs`):
-
-```rust
-#![cfg_attr(not(any(feature = "export-abi", test)), no_main)]
-extern crate alloc;
-
-use stylus_sdk::alloy_primitives::U256;
-use stylus_sdk::prelude::*;
-
-sol_storage! {
-    #[entrypoint]
-    pub struct Counter {
-        uint256 value;
-    }
-}
-
-#[public]
-impl Counter {
-    pub fn add(&mut self, left: U256, right: U256) -> U256 {
-        let sum = left + right;
-        self.value.set(sum);
-        sum
-    }
-
-    pub fn get_value(&self) -> U256 {
-        self.value.get()
-    }
-}
-```
-
-Deploy:
-```bash
-cargo stylus deploy \
-  --private-key <PRIVATE_KEY> \
-  --endpoint http://localhost:8547
-```
-
----
-
-### Step 3: Execute a Transaction
-
-```bash
-CONTRACT_ADDRESS="0x..."
-
-TX_HASH=$(cast send $CONTRACT_ADDRESS \
-  "add(uint256,uint256)" 42 58 \
-  --private-key <PRIVATE_KEY> \
-  --rpc-url http://localhost:8547 \
-  --json | jq -r '.transactionHash')
-```
-
----
-
-### Step 4: Generate Profile & Flamegraph
-
-```bash
+# This will generate output as profile.json and flamegraph.svg in specified file
 stylus-trace capture \
-  --rpc http://localhost:8547 \
-  --tx $TX_HASH \
-  --wasm ./target/wasm32-unknown-unknown/release/my_contract.wasm \
-  --output profile.json \
-  --flamegraph flamegraph.svg \
-  --summary
+--rpc <RPC> \
+--tx <TX_HASH> \
+--output <anything.json> \
+--flamegraph <anything.svg> \
+--summary
+
+OR
+
+# This will generate output as profile.json but no flamegraph in artifacts directory
+stylus-trace capture --tx <TX_HASH> --summary
+
+OR
+# this will generate output as profile.json and flamegraph.svg in artifacts directory
+stylus-trace capture \
+--tx <TX_HASH> \
+--flamegraph \
+--summary
+
 ```
 
----
-
-### Step 5: View the Flamegraph
-
-```bash
-open flamegraph.svg   # macOS
-xdg-open flamegraph.svg  # Linux
-```
+**What happens?**
+- `artifacts/profile.json`: A detailed data structure of your transaction.
+- `artifacts/flamegraph.svg`: An interactive SVG you can open in any browser.
+- **Terminal Output**: A high-level summary of the hottest paths.
 
 ---
 
@@ -153,50 +108,52 @@ To enable line-level resolution in your reports and flamegraphs, you must compil
 ### 1. Enable Debug Info
 Update your contract's `Cargo.toml`:
 
-```toml
-[profile.release]
-debug = true
-```
+   ```toml
+   [profile.release]
+   debug = true
+   ```
 
-### 2. Build Contract
+2. **Build your contract**:
+   ```bash
+   cargo build --release --target wasm32-unknown-unknown
+   ```
+
+---
+
+## 📖 CLI Command Reference
+
+### `capture`
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--tx` | **(Required)** Transaction hash to profile | - |
+| `--rpc` | RPC endpoint URL | `http://localhost:8547` |
+| `--flamegraph` | Generate an SVG flamegraph | `artifacts/flamegraph.svg` |
+| `--output` | Save JSON profile to path | `artifacts/profile.json` |
+| `--summary` | Print a text-based summary to terminal | `false` |
+| `--ink` | Use Stylus Ink units (scaled 10,000x) | `false` |
+| `--wasm` | Path to WASM binary for source mapping | - |
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! 
+
 ```bash
-cargo build --release --target wasm32-unknown-unknown
-```
+# Run tests across workspace
+cargo test --workspace
 
-### 3. Capture with WASM
-Provide the path to the compiled `.wasm` file using the `--wasm` flag:
+# Linting
+cargo clippy --workspace --all-targets --all-features -- -D warnings
 
-```bash
-stylus-trace capture --tx <TX_HASH> --wasm path/to/contract.wasm --summary
+# Formatting
+cargo fmt --all --check
 ```
 
 ---
 
-## CLI Command Reference
-
-```bash
-stylus-trace --help
-```
-
-Commands:
-- `capture`: Profile a transaction and generate reports.
-    - `--rpc`: RPC endpoint URL.
-    - `--tx`: Transaction hash to profile.
-    - `--wasm`: Path to WASM binary (for source mapping).
-    - `--tracer`: Optional tracer name (e.g., `stylusTracer`).
-    - `--output`: Path to save JSON profile.
-    - `--flamegraph`: Path to save SVG flamegraph.
-    - `--ink`: Display costs in Stylus Ink (scaled by 10,000).
-- `validate`: Validate a profile JSON file against the schema.
-- `schema`: Display the JSON schema for profiles.
-- `version`: Display version information.
-
----
-
-## License
+## 📄 License
 
 MIT
 
----
-
-**Built with ❤️ for the Arbitrum Stylus ecosystem**
+**Built with ❤️ for the Arbitrum Stylus ecosystem.**

@@ -3,7 +3,7 @@
 //! A performance profiling tool for Arbitrum Stylus transactions.
 //! Generates flamegraphs and detailed profiles from transaction traces.
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 use env_logger::Env;
 use std::path::PathBuf;
@@ -18,19 +18,19 @@ use stylus_trace_studio::flamegraph::FlamegraphConfig;
 #[derive(Parser, Debug)]
 #[command(name = "stylus-trace")]
 #[command(version, about, long_about = None)]
-struct Cli {
+pub struct Cli {
     /// Subcommand to execute
     #[command(subcommand)]
-    command: Commands,
+    pub command: Commands,
 
     /// Enable verbose logging
     #[arg(short, long, global = true)]
-    verbose: bool,
+    pub verbose: bool,
 }
 
 /// Available commands
 #[derive(Subcommand, Debug)]
-enum Commands {
+pub enum Commands {
     /// Capture and profile a transaction
     Capture {
         /// RPC endpoint URL
@@ -41,12 +41,12 @@ enum Commands {
         #[arg(short, long)]
         tx: String,
 
-        /// Output path for JSON profile
-        #[arg(short, long, default_value = "profile.json")]
+        /// Output path for JSON profile (placed in artifacts/ by default)
+        #[arg(short, long, default_value = "artifacts/profile.json")]
         output: PathBuf,
 
-        /// Output path for SVG flamegraph (optional)
-        #[arg(short, long)]
+        /// Output path for SVG flamegraph (placed in artifacts/ by default)
+        #[arg(short, long, default_missing_value = "artifacts/flamegraph.svg", num_args = 0..=1)]
         flamegraph: Option<PathBuf>,
 
         /// Number of top hot paths to include
@@ -97,77 +97,89 @@ enum Commands {
 }
 
 fn main() -> Result<()> {
-    // Parse CLI arguments
     let cli = Cli::parse();
+    setup_logging(cli.verbose);
 
-    // Setup logging
-    let log_level = if cli.verbose { "debug" } else { "info" };
-    env_logger::Builder::from_env(Env::default().default_filter_or(log_level)).init();
-
-    // Execute command
     match cli.command {
-        Commands::Capture {
-            rpc,
-            tx,
-            output,
-            flamegraph,
-            top_paths,
-            title,
-
-            width,
-            summary,
-            ink,
-            wasm,
-            tracer,
-        } => {
-            // Create flamegraph config
-            let fg_config = if flamegraph.is_some() {
-                let mut config = FlamegraphConfig::new();
-
-                if let Some(title_str) = title {
-                    config = config.with_title(title_str);
-                }
-
-                config.width = width;
-
-                Some(config)
-            } else {
-                None
-            };
-
-            // Create capture args
-            let args = CaptureArgs {
-                rpc_url: rpc,
-                transaction_hash: tx,
-                output_json: output,
-                output_svg: flamegraph,
-                top_paths,
-                flamegraph_config: fg_config.map(|c| c.with_ink(ink)),
-                print_summary: summary,
-                tracer,
-                ink,
-                wasm,
-            };
-
-            // Validate args first
-            validate_args(&args)?;
-
-            // Execute capture
-            execute_capture(args)?;
-        }
-
+        Commands::Capture { .. } => handle_capture(cli.command)?,
         Commands::Validate { file } => {
-            validate_profile_file(file)?;
+            validate_profile_file(file).context("Failed to validate profile")?
         }
-
-        Commands::Schema { show } => {
-            display_schema(show);
-        }
-
-        Commands::Version => {
-            display_version();
-        }
+        Commands::Schema { show } => display_schema(show),
+        Commands::Version => display_version(),
     }
 
     Ok(())
+}
+
+/// Setup logging based on verbosity level
+fn setup_logging(verbose: bool) {
+    let log_level = if verbose { "debug" } else { "info" };
+    env_logger::Builder::from_env(Env::default().default_filter_or(log_level)).init();
+}
+
+/// Handle the capture command logic
+fn handle_capture(command: Commands) -> Result<()> {
+    if let Commands::Capture {
+        rpc,
+        tx,
+        mut output,
+        mut flamegraph,
+        top_paths,
+        title,
+        width,
+        summary,
+        ink,
+        wasm,
+        tracer,
+    } = command
+    {
+        // Enforce artifacts/ directory for relative paths
+        output = resolve_artifact_path(output);
+
+        if let Some(path) = flamegraph {
+            flamegraph = Some(resolve_artifact_path(path));
+        }
+
+        // Build flamegraph configuration if requested
+        let flamegraph_config = flamegraph.as_ref().map(|_| {
+            let mut config = FlamegraphConfig::new().with_ink(ink);
+            config.width = width;
+            if let Some(t) = title {
+                config = config.with_title(t);
+            }
+            config
+        });
+
+        let args = CaptureArgs {
+            rpc_url: rpc,
+            transaction_hash: tx,
+            output_json: output,
+            output_svg: flamegraph,
+            top_paths,
+            flamegraph_config,
+            print_summary: summary,
+            tracer,
+            ink,
+            wasm,
+        };
+
+        validate_args(&args).context("Invalid capture arguments")?;
+        execute_capture(args).context("Capture execution failed")?;
+    }
+
+    Ok(())
+}
+
+/// Resolves a path to the artifacts directory if it's a simple filename
+fn resolve_artifact_path(path: PathBuf) -> PathBuf {
+    if path
+        .parent()
+        .map(|p| p.as_os_str().is_empty())
+        .unwrap_or(true)
+    {
+        PathBuf::from("artifacts").join(path)
+    } else {
+        path
+    }
 }

@@ -2,6 +2,10 @@
 //!
 //! Translates binary offsets (PCs) to source locations (file:line) using DWARF.
 
+//! Source mapping service for Stylus WASM binaries.
+//!
+//! Translates binary offsets (PCs) to source locations (file:line) using DWARF.
+
 use addr2line::Context;
 use log::{debug, info};
 use std::path::Path;
