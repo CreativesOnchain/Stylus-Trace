@@ -13,7 +13,9 @@ license = "MIT"
 description = "Performance profiling and flamegraph generation for Arbitrum Stylus transactions"
 repository = "https://github.com/CreativesOnchain/Stylus-Trace"
 homepage = "https://github.com/CreativesOnchain/Stylus-Trace"
-readme = "README.md"
+
+[package]
+readme = "../../README.md"
 
 
 [workspace.dependencies]
