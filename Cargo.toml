@@ -6,9 +6,9 @@ members = [
 ]
 
 [workspace.package]
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
-authors = ["Stylus Trace Team"]
+authors = ["CreativesOnchain"]
 license = "MIT"
 description = "Performance profiling and flamegraph generation for Arbitrum Stylus transactions"
 repository = "https://github.com/CreativesOnchain/Stylus-Trace"
