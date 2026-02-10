@@ -51,5 +51,5 @@ pub fn display_version() {
     println!("Profile Schema: v{}", SCHEMA_VERSION);
     println!();
     println!("A performance profiling tool for Arbitrum Stylus transactions.");
-    println!("https://github.com/your-org/stylus-trace-studio");
+    println!("https://github.com/CreativesOnchain/Stylus-Trace");
 }
