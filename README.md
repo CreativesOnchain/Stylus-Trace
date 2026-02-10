@@ -82,15 +82,14 @@ stylus-trace capture \
 
 OR
 
-# Capture profile with default options
+# This will generate output as profile.json but no flamegraph in artifacts directory
 stylus-trace capture --tx <TX_HASH> --summary
 
 OR
-
+# this will generate output as profile.json and flamegraph.svg in artifacts directory
 stylus-trace capture \
 --tx <TX_HASH> \
---output <anything.json> \
---flamegraph <anything.svg> \
+--flamegraph \
 --summary
 
 ```
