@@ -173,7 +173,11 @@ fn handle_capture(command: Commands) -> Result<()> {
 
 /// Resolves a path to the artifacts directory if it's a simple filename
 fn resolve_artifact_path(path: PathBuf) -> PathBuf {
-    if path.parent().map(|p| p.as_os_str().is_empty()).unwrap_or(true) {
+    if path
+        .parent()
+        .map(|p| p.as_os_str().is_empty())
+        .unwrap_or(true)
+    {
         PathBuf::from("artifacts").join(path)
     } else {
         path
