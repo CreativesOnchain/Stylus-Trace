@@ -72,7 +72,8 @@ In your **contract's** directory:
 # Build the contract to WASM
 cargo build --release --target wasm32-unknown-unknown
 
-# Capture profile fully
+# This will generate output as profile.json and flamegraph.svg in specified file
+
 stylus-trace capture \
 --rpc <RPC> \
 --tx <TX_HASH> \
