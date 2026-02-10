@@ -1,23 +1,32 @@
 [package]
 name = "stylus-trace-studio"
 version.workspace = true
-authors.workspace = true
 edition.workspace = true
+authors.workspace = true
 license.workspace = true
 description.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation = "https://docs.rs/stylus-trace-studio"
+
+# EITHER use a crate-local README (recommended)
+readme = "README.md"
+
+# OR point to root README (works too)
+# readme = "../../README.md"
 
 [dependencies]
+# keep whatever you already have, or use workspace deps like:
+clap.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 reqwest.workspace = true
 anyhow.workspace = true
 thiserror.workspace = true
+env_logger.workspace = true
 log.workspace = true
 chrono.workspace = true
 addr2line.workspace = true
 object.workspace = true
 gimli.workspace = true
-
-[dev-dependencies]
 tempfile.workspace = true
-pretty_assertions.workspace = true

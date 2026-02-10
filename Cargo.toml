@@ -1,8 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    "bin/stylus-trace",
-    "crates/stylus-trace-studio",
+  "bin/stylus-trace",
+  "crates/stylus-trace-studio",
 ]
 
 [workspace.package]
@@ -14,12 +14,8 @@ description = "Performance profiling and flamegraph generation for Arbitrum Styl
 repository = "https://github.com/CreativesOnchain/Stylus-Trace"
 homepage = "https://github.com/CreativesOnchain/Stylus-Trace"
 
-[package]
-readme = "../../README.md"
-
-
 [workspace.dependencies]
-stylus-trace-studio = { version = "0.1.5", path = "crates/stylus-trace-studio" }
+stylus-trace-studio = { version = "0.1.6", path = "crates/stylus-trace-studio" }
 clap = { version = "4.5", features = ["derive", "env"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -34,16 +30,6 @@ object = { version = "0.32", features = ["wasm"] }
 gimli = "0.28"
 tempfile = "3.10"
 pretty_assertions = "1.4"
-
-version.workspace = true
-edition.workspace = true
-authors.workspace = true
-license.workspace = true
-description.workspace = true
-repository.workspace = true
-homepage.workspace = true
-readme.workspace = true
-
 
 [profile.release]
 opt-level = 3
