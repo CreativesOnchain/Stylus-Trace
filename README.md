@@ -72,14 +72,27 @@ In your **contract's** directory:
 # Build the contract to WASM
 cargo build --release --target wasm32-unknown-unknown
 
-# Capture profile with the generated WASM
+# Capture profile fully
 stylus-trace capture \
-  --rpc http://localhost:8547 \
-  --tx $TX_HASH \
-  --wasm ./target/wasm32-unknown-unknown/release/my_contract.wasm \
-  --output profile.json \
-  --flamegraph flamegraph.svg \
-  --summary
+--rpc <RPC> \
+--tx <TX_HASH> \
+--output <anything.json> \
+--flamegraph <anything.svg> \
+--summary
+
+OR
+
+# Capture profile with default options
+stylus-trace capture --tx <TX_HASH> --summary
+
+OR
+
+stylus-trace capture \
+--tx <TX_HASH> \
+--output <anything.json> \
+--flamegraph <anything.svg> \
+--summary
+
 ```
 
 **What happens?**
@@ -105,33 +118,6 @@ Update your contract's `Cargo.toml`:
    ```bash
    cargo build --release --target wasm32-unknown-unknown
    ```
-
-
-
-```bash
-stylus-trace capture --tx <TX_HASH> --summary
-```
-OR
-bash
-lus-trace capture \
-     --tx <TX_HASH> \
---output <anything.json> \
---flamegraph <anything.svg> \
---summary
-```
-OR
-```bash
-stylus-trace capture \
---rpc <RPC> \
---tx <TX_HASH> \
---output <anything.json> \
---flamegraph <anything.svg> \
---summary
-```
-
-
-
-
 
 ---
 
