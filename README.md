@@ -73,7 +73,6 @@ In your **contract's** directory:
 cargo build --release --target wasm32-unknown-unknown
 
 # This will generate output as profile.json and flamegraph.svg in specified file
-
 stylus-trace capture \
 --rpc <RPC> \
 --tx <TX_HASH> \
