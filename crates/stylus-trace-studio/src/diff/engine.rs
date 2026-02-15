@@ -1,5 +1,4 @@
 //! Core diff engine implementation.
-//!
 //! Generates complete diff reports by comparing two profiles.
 
 use crate::parser::schema::Profile;
