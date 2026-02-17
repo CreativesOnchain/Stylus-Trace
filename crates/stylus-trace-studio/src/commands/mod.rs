@@ -4,6 +4,7 @@
 //! Commands orchestrate the various library components to perform user tasks.
 
 pub mod capture;
+pub mod diff;
 pub mod models;
 pub mod utils;
 

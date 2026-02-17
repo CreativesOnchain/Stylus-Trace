@@ -64,3 +64,22 @@ pub enum OutputError {
     #[error("Invalid output path: {0}")]
     InvalidPath(String),
 }
+
+/// Errors that can occur during profile comparison (diff)
+#[derive(Error, Debug)]
+pub enum DiffError {
+    #[error("Incompatible schema versions: baseline={0}, target={1}")]
+    IncompatibleVersions(String, String),
+
+    #[error("Failed to read profile: {0}")]
+    ReadFailed(#[from] OutputError),
+
+    #[error("Invalid threshold configuration: {0}")]
+    InvalidThresholds(String),
+
+    #[error("Threshold TOML parse error: {0}")]
+    ThresholdParseFailed(#[from] toml::de::Error),
+
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
+}

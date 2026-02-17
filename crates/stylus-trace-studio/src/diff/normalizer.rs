@@ -76,7 +76,7 @@ pub fn calculate_hostio_delta(
 /// Calculate changes for each HostIO type
 ///
 /// Handles missing types by treating them as 0
-fn calculate_hostio_type_changes(
+pub fn calculate_hostio_type_changes(
     baseline_types: &HashMap<String, u64>,
     target_types: &HashMap<String, u64>,
 ) -> HashMap<String, HostIOTypeChange> {
@@ -224,62 +224,4 @@ pub fn check_compatibility(
 pub fn are_profiles_identical(baseline: &Profile, target: &Profile) -> bool {
     baseline.transaction_hash == target.transaction_hash
         && baseline.total_gas == target.total_gas
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_safe_percentage_normal() {
-        assert_eq!(safe_percentage(50, 100), 50.0);
-        assert_eq!(safe_percentage(-25, 100), -25.0);
-    }
-
-    #[test]
-    fn test_safe_percentage_zero_baseline() {
-        // Should not panic and should return 0.0
-        assert_eq!(safe_percentage(10, 0), 0.0);
-    }
-
-    #[test]
-    fn test_calculate_gas_delta() {
-        let delta = calculate_gas_delta(100, 150);
-        assert_eq!(delta.baseline, 100);
-        assert_eq!(delta.target, 150);
-        assert_eq!(delta.absolute_change, 50);
-        assert_eq!(delta.percent_change, 50.0);
-    }
-
-    #[test]
-    fn test_calculate_gas_delta_negative() {
-        let delta = calculate_gas_delta(150, 100);
-        assert_eq!(delta.absolute_change, -50);
-        assert_eq!(delta.percent_change, -33.333333333333336);
-    }
-
-    #[test]
-    fn test_hostio_type_changes_missing_types() {
-        let mut baseline = HashMap::new();
-        baseline.insert("storage_load".to_string(), 10);
-        baseline.insert("storage_store".to_string(), 5);
-
-        let mut target = HashMap::new();
-        target.insert("storage_load".to_string(), 8);
-        target.insert("call".to_string(), 3);
-
-        let changes = calculate_hostio_type_changes(&baseline, &target);
-
-        assert_eq!(changes.get("storage_load").unwrap().baseline, 10);
-        assert_eq!(changes.get("storage_load").unwrap().target, 8);
-        assert_eq!(changes.get("storage_load").unwrap().delta, -2);
-
-        assert_eq!(changes.get("storage_store").unwrap().baseline, 5);
-        assert_eq!(changes.get("storage_store").unwrap().target, 0);
-        assert_eq!(changes.get("storage_store").unwrap().delta, -5);
-
-        assert_eq!(changes.get("call").unwrap().baseline, 0);
-        assert_eq!(changes.get("call").unwrap().target, 3);
-        assert_eq!(changes.get("call").unwrap().delta, 3);
-    }
 }

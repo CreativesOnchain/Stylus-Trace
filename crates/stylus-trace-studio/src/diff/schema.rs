@@ -31,7 +31,7 @@ pub struct DiffReport {
 }
 
 /// Metadata extracted from a profile for comparison
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ProfileMetadata {
     /// Transaction hash
     pub transaction_hash: String,
@@ -44,7 +44,7 @@ pub struct ProfileMetadata {
 }
 
 /// All calculated deltas
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Deltas {
     /// Gas usage changes
     pub gas: GasDelta,
@@ -57,7 +57,7 @@ pub struct Deltas {
 }
 
 /// Gas usage delta
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct GasDelta {
     /// Baseline gas
     pub baseline: u64,
@@ -73,7 +73,7 @@ pub struct GasDelta {
 }
 
 /// HostIO statistics delta
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HostIoDelta {
     /// Baseline total calls
     pub baseline_total_calls: u64,
@@ -104,7 +104,7 @@ pub struct HostIoDelta {
 }
 
 /// Change in a specific HostIO type
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HostIOTypeChange {
     /// Count in baseline
     pub baseline: u64,
@@ -117,7 +117,7 @@ pub struct HostIOTypeChange {
 }
 
 /// Hot paths comparison
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HotPathsDelta {
     /// Paths present in both profiles
     pub common_paths: Vec<HotPathComparison>,
@@ -130,7 +130,7 @@ pub struct HotPathsDelta {
 }
 
 /// Comparison of a single hot path present in both profiles
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct HotPathComparison {
     /// Stack trace identifier
     pub stack: String,
@@ -149,7 +149,7 @@ pub struct HotPathComparison {
 }
 
 /// A single threshold violation
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ThresholdViolation {
     /// Name of the metric that violated threshold
     pub metric: String,

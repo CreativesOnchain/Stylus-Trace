@@ -18,40 +18,25 @@
 
 mod engine;
 mod normalizer;
+mod output;
 mod schema;
 mod threshold;
 
 // Public API exports
 pub use engine::generate_diff;
+pub use output::render_terminal_diff;
 pub use schema::{
     DiffReport, DiffSummary, Deltas, GasDelta, HostIoDelta, HostIOTypeChange, HotPathComparison,
     HotPathsDelta, ProfileMetadata, ThresholdViolation,
 };
 pub use threshold::{
-    check_thresholds, load_thresholds, GasThresholds, HostIOThresholds, HotPathThresholds,
-    ThresholdConfig,
+    check_gas_thresholds, check_thresholds, create_summary, load_thresholds, GasThresholds,
+    HostIOThresholds, HotPathThresholds, ThresholdConfig,
+};
+pub use normalizer::{
+    calculate_gas_delta, calculate_hostio_type_changes, safe_percentage,
 };
 
-// Error type
-use thiserror::Error;
+pub use crate::utils::error::DiffError;
 
-#[derive(Error, Debug)]
-pub enum DiffError {
-    #[error("Incompatible schema versions: baseline={0}, target={1}")]
-    IncompatibleVersions(String, String),
 
-    #[error("Failed to read profile: {0}")]
-    ReadFailed(#[from] crate::utils::error::OutputError),
-
-    #[error("Invalid threshold configuration: {0}")]
-    InvalidThresholds(String),
-
-    #[error("Threshold TOML parse error: {0}")]
-    ThresholdParseFailed(#[from] toml::de::Error),
-
-    #[error("IO error: {0}")]
-    IoError(#[from] std::io::Error),
-}
-
-#[cfg(test)]
-mod tests;
