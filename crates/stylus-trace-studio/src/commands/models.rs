@@ -1,4 +1,5 @@
 use crate::flamegraph::FlamegraphConfig;
+use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 
 /// Arguments for the capture command
@@ -33,6 +34,12 @@ pub struct CaptureArgs {
     /// Show Stylus Ink units (scaled by 10,000)
     pub ink: bool,
 
+    /// Path to baseline profile for on-the-fly diffing
+    pub baseline: Option<std::path::PathBuf>,
+
+    /// Simple gas increase threshold percentage for on-the-fly diffing
+    pub threshold_percent: Option<f64>,
+
     /// Path to WASM binary (optional)
     pub wasm: Option<PathBuf>,
 }
@@ -50,6 +57,8 @@ impl Default for CaptureArgs {
             tracer: None,
             ink: false,
             wasm: None,
+            baseline: None,
+            threshold_percent: None,
         }
     }
 }
@@ -76,6 +85,40 @@ impl GasDisplay {
             "ink"
         } else {
             "gas"
+        }
+    }
+}
+/// Arguments for the diff command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DiffArgs {
+    /// Path to the baseline profile JSON
+    pub baseline: PathBuf,
+
+    /// Path to the target profile JSON
+    pub target: PathBuf,
+
+    /// Optional threshold configuration file (TOML)
+    pub threshold_file: Option<PathBuf>,
+
+    /// Simple gas increase threshold percentage (e.g., 5.0)
+    pub threshold_percent: Option<f64>,
+
+    /// Print a human-readable summary to the terminal
+    pub summary: bool,
+
+    /// Path to write the diff report JSON
+    pub output: Option<PathBuf>,
+}
+
+impl Default for DiffArgs {
+    fn default() -> Self {
+        Self {
+            baseline: PathBuf::new(),
+            target: PathBuf::new(),
+            threshold_file: None,
+            threshold_percent: None,
+            summary: true,
+            output: None,
         }
     }
 }

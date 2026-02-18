@@ -12,7 +12,7 @@ use super::schema::{DiffReport, DiffSummary, ThresholdViolation};
 use super::DiffError;
 
 /// Complete threshold configuration
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct ThresholdConfig {
     /// Gas thresholds
     #[serde(default)]
@@ -48,7 +48,7 @@ pub struct HostIOThresholds {
 }
 
 /// Hot path thresholds
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct HotPathThresholds {
     /// Warn if any single hot path increases by more than this percentage
     pub warn_individual_increase_percent: Option<f64>,
@@ -116,7 +116,7 @@ pub fn check_thresholds(
 }
 
 /// Check gas thresholds
-fn check_gas_thresholds(
+pub fn check_gas_thresholds(
     gas_delta: &super::schema::GasDelta,
     thresholds: &GasThresholds,
     violations: &mut Vec<ThresholdViolation>,
@@ -135,9 +135,7 @@ fn check_gas_thresholds(
 
     // Check absolute increase
     if let Some(max_absolute) = thresholds.max_increase_absolute {
-        if gas_delta.absolute_change > 0
-            && gas_delta.absolute_change as u64 > max_absolute
-        {
+        if gas_delta.absolute_change > 0 && gas_delta.absolute_change as u64 > max_absolute {
             violations.push(ThresholdViolation {
                 metric: "gas.max_increase_absolute".to_string(),
                 threshold: max_absolute as f64,
@@ -204,11 +202,8 @@ fn check_hot_path_thresholds(
 }
 
 /// Create summary based on violations
-fn create_summary(violations: &[ThresholdViolation]) -> DiffSummary {
-    let error_count = violations
-        .iter()
-        .filter(|v| v.severity == "error")
-        .count();
+pub fn create_summary(violations: &[ThresholdViolation]) -> DiffSummary {
+    let error_count = violations.iter().filter(|v| v.severity == "error").count();
     let warning_count = violations
         .iter()
         .filter(|v| v.severity == "warning")
@@ -227,88 +222,5 @@ fn create_summary(violations: &[ThresholdViolation]) -> DiffSummary {
         violation_count: violations.len(),
         status: status.to_string(),
         warning: None,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::diff::schema::{Deltas, GasDelta, HostIoDelta, HotPathsDelta};
-
-    #[test]
-    fn test_gas_threshold_exceeded() {
-        let gas_delta = GasDelta {
-            baseline: 100,
-            target: 150,
-            absolute_change: 50,
-            percent_change: 50.0,
-        };
-
-        let thresholds = GasThresholds {
-            max_increase_percent: Some(10.0),
-            max_increase_absolute: None,
-        };
-
-        let mut violations = Vec::new();
-        check_gas_thresholds(&gas_delta, &thresholds, &mut violations);
-
-        assert_eq!(violations.len(), 1);
-        assert_eq!(violations[0].metric, "gas.max_increase_percent");
-        assert_eq!(violations[0].threshold, 10.0);
-        assert_eq!(violations[0].actual, 50.0);
-    }
-
-    #[test]
-    fn test_gas_threshold_not_exceeded() {
-        let gas_delta = GasDelta {
-            baseline: 100,
-            target: 105,
-            absolute_change: 5,
-            percent_change: 5.0,
-        };
-
-        let thresholds = GasThresholds {
-            max_increase_percent: Some(10.0),
-            max_increase_absolute: None,
-        };
-
-        let mut violations = Vec::new();
-        check_gas_thresholds(&gas_delta, &thresholds, &mut violations);
-
-        assert_eq!(violations.len(), 0);
-    }
-
-    #[test]
-    fn test_create_summary_with_errors() {
-        let violations = vec![
-            ThresholdViolation {
-                metric: "test".to_string(),
-                threshold: 10.0,
-                actual: 20.0,
-                severity: "error".to_string(),
-            },
-        ];
-
-        let summary = create_summary(&violations);
-        assert_eq!(summary.status, "FAILED");
-        assert!(summary.has_regressions);
-        assert_eq!(summary.violation_count, 1);
-    }
-
-    #[test]
-    fn test_create_summary_with_warnings() {
-        let violations = vec![
-            ThresholdViolation {
-                metric: "test".to_string(),
-                threshold: 10.0,
-                actual: 20.0,
-                severity: "warning".to_string(),
-            },
-        ];
-
-        let summary = create_summary(&violations);
-        assert_eq!(summary.status, "WARNING");
-        assert!(!summary.has_regressions);
-        assert_eq!(summary.violation_count, 1);
     }
 }

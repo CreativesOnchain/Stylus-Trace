@@ -4,7 +4,7 @@
 //! Generates flamegraphs and detailed profiles from transaction traces.
 
 use anyhow::{Context, Result};
-use clap::{Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 use env_logger::Env;
 use std::path::PathBuf;
 
@@ -69,14 +69,21 @@ pub enum Commands {
         #[arg(long)]
         ink: bool,
 
-        /// Path to WASM binary with debug symbols (for source-to-line mapping)
-        #[arg(long)]
-        wasm: Option<PathBuf>,
-
         /// Optional tracer name (defaults to "stylusTracer" if omitted)
         #[arg(long)]
         tracer: Option<String>,
+
+        /// Path to baseline profile for on-the-fly diffing
+        #[arg(long)]
+        baseline: Option<PathBuf>,
+
+        /// Simple gas increase threshold percentage for on-the-fly diffing
+        #[arg(short = 'p', long)]
+        threshold_percent: Option<f64>,
     },
+
+    /// Compare two transaction profiles and detect regressions
+    Diff(DiffSubArgs),
 
     /// Validate a profile JSON file
     Validate {
@@ -96,12 +103,38 @@ pub enum Commands {
     Version,
 }
 
+#[derive(Args, Debug)]
+pub struct DiffSubArgs {
+    /// Path to the baseline profile JSON
+    pub baseline: PathBuf,
+
+    /// Path to the target profile JSON
+    pub target: PathBuf,
+
+    /// Optional threshold configuration file (TOML)
+    #[arg(short, long)]
+    pub threshold: Option<PathBuf>,
+
+    /// Simple gas increase threshold percentage (e.g., 5.0)
+    #[arg(short = 'p', long)]
+    pub threshold_percent: Option<f64>,
+
+    /// Print a human-readable summary to the terminal
+    #[arg(short, long, default_value_t = true)]
+    pub summary: bool,
+
+    /// Path to write the diff report JSON
+    #[arg(short, long)]
+    pub output: Option<PathBuf>,
+}
+
 fn main() -> Result<()> {
     let cli = Cli::parse();
     setup_logging(cli.verbose);
 
     match cli.command {
         Commands::Capture { .. } => handle_capture(cli.command)?,
+        Commands::Diff(ref args) => handle_diff(args)?,
         Commands::Validate { file } => {
             validate_profile_file(file).context("Failed to validate profile")?
         }
@@ -130,8 +163,9 @@ fn handle_capture(command: Commands) -> Result<()> {
         width,
         summary,
         ink,
-        wasm,
         tracer,
+        baseline,
+        threshold_percent,
     } = command
     {
         // Enforce artifacts/ directory for relative paths
@@ -140,6 +174,8 @@ fn handle_capture(command: Commands) -> Result<()> {
         if let Some(path) = flamegraph {
             flamegraph = Some(resolve_artifact_path(path));
         }
+
+        let baseline = baseline.map(resolve_artifact_path);
 
         // Build flamegraph configuration if requested
         let flamegraph_config = flamegraph.as_ref().map(|_| {
@@ -161,13 +197,31 @@ fn handle_capture(command: Commands) -> Result<()> {
             print_summary: summary,
             tracer,
             ink,
-            wasm,
+            baseline,
+            threshold_percent,
+            wasm: None,
         };
 
         validate_args(&args).context("Invalid capture arguments")?;
         execute_capture(args).context("Capture execution failed")?;
     }
 
+    Ok(())
+}
+
+/// Handle the diff command logic
+fn handle_diff(args: &DiffSubArgs) -> Result<()> {
+    let studio_args = stylus_trace_studio::commands::models::DiffArgs {
+        baseline: args.baseline.clone(),
+        target: args.target.clone(),
+        threshold_file: args.threshold.clone(),
+        threshold_percent: args.threshold_percent,
+        summary: args.summary,
+        output: args.output.clone(),
+    };
+
+    stylus_trace_studio::commands::diff::execute_diff(studio_args)
+        .context("Diff execution failed")?;
     Ok(())
 }
 

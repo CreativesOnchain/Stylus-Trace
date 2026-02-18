@@ -347,6 +347,9 @@ pub fn parse_gas_value(value: &str) -> Result<u64, ParseError> {
 /// Convert parsed trace to output profile format
 ///
 /// **Public** - used by commands to create final output
+///
+/// NOTE: Source mapping via `mapper` is currently non-functional because
+/// `stylusTracer` does not provide PC offsets.
 pub fn to_profile(
     parsed_trace: &ParsedTrace,
     mut hot_paths: Vec<super::schema::HotPath>,
@@ -372,6 +375,9 @@ pub fn to_profile(
 /// Enrich hot paths with source-to-line mapping information
 ///
 /// **Private** - internal helper for to_profile
+///
+/// NOTE: This currently fails to find locations because PC offsets in the trace
+/// are reported as 0x0 by the Arbitrum `stylusTracer`.
 fn enrich_source_hints(
     hot_paths: &mut [super::schema::HotPath],
     mapper: &super::source_map::SourceMapper,

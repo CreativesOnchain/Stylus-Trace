@@ -58,7 +58,10 @@ pub struct HotPath {
     pub source_hint: Option<SourceHint>,
 }
 
-/// Source code location hint (Milestone 3 feature)
+/// Source code location hint
+///
+/// NOTE: This is currently a placeholder/reserved feature. It is non-functional
+/// because `stylusTracer` does not provide PC offsets.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SourceHint {
     pub file: String,

@@ -11,8 +11,12 @@
 use crate::aggregator::stack_builder::CollapsedStack;
 use crate::aggregator::{build_collapsed_stacks, calculate_gas_distribution, calculate_hot_paths};
 use crate::commands::models::{CaptureArgs, GasDisplay};
+use crate::diff::{
+    check_thresholds, generate_diff, render_terminal_diff, GasThresholds, ThresholdConfig,
+};
 use crate::flamegraph::{generate_flamegraph, generate_text_summary};
-use crate::output::{write_profile, write_svg};
+use crate::output::json::{read_profile, write_profile};
+use crate::output::svg::write_svg;
 use crate::parser::{
     parse_trace, schema::HotPath, source_map::SourceMapper, to_profile, ParsedTrace,
 };
@@ -142,6 +146,36 @@ pub fn execute_capture(args: CaptureArgs) -> Result<()> {
         svg_content,
     )?;
 
+    if let Some(baseline_path) = &args.baseline {
+        info!(
+            "Performing on-the-fly diff against baseline: {}...",
+            baseline_path.display()
+        );
+        let baseline = read_profile(baseline_path)
+            .context("Failed to read baseline profile for on-the-fly diffing")?;
+        let profile = to_profile(
+            &parsed_trace,
+            calculate_hot_paths(&stacks, 0, args.top_paths),
+            mapper.as_ref(),
+        );
+
+        let mut report =
+            generate_diff(&baseline, &profile).context("Failed to generate on-the-fly diff")?;
+
+        if let Some(percent) = args.threshold_percent {
+            let thresholds = ThresholdConfig {
+                gas: GasThresholds {
+                    max_increase_percent: Some(percent),
+                    max_increase_absolute: None,
+                },
+                ..Default::default()
+            };
+            check_thresholds(&mut report, &thresholds);
+        }
+
+        println!("{}", render_terminal_diff(&report));
+    }
+
     if args.print_summary {
         print_transaction_summary(&args, &parsed_trace, &stacks, mapper.as_ref());
     }
@@ -155,7 +189,8 @@ pub fn execute_capture(args: CaptureArgs) -> Result<()> {
 
 /// Initialize SourceMapper if WASM path is provided.
 ///
-/// **Private** - internal helper for execute_capture
+/// NOTE: This is a reserved feature. While it successfully loads WASM/DWARF,
+/// it will fail to resolve locations because the tracer lacks PC offsets.
 fn initialize_source_mapper(wasm_path: Option<&PathBuf>) -> Option<SourceMapper> {
     let wasm_path = wasm_path?;
     info!(

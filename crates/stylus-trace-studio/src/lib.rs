@@ -4,6 +4,7 @@
 
 pub mod aggregator;
 pub mod commands;
+pub mod diff;
 pub mod flamegraph;
 pub mod output;
 pub mod parser;

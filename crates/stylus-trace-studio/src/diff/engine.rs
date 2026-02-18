@@ -52,8 +52,7 @@ pub fn generate_diff(baseline: &Profile, target: &Profile) -> Result<DiffReport,
     // Step 3: Calculate all deltas
     let gas_delta = calculate_gas_delta(baseline.total_gas, target.total_gas);
 
-    let hostio_delta =
-        calculate_hostio_delta(&baseline.hostio_summary, &target.hostio_summary);
+    let hostio_delta = calculate_hostio_delta(&baseline.hostio_summary, &target.hostio_summary);
 
     let hot_paths_delta = compare_hot_paths(&baseline.hot_paths, &target.hot_paths);
 
@@ -86,97 +85,4 @@ pub fn generate_diff(baseline: &Profile, target: &Profile) -> Result<DiffReport,
         threshold_violations: Vec::new(), // Will be populated by check_thresholds
         summary,
     })
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::parser::schema::{HotPath, HostIoSummary};
-    use std::collections::HashMap;
-
-    fn create_test_profile(
-        tx_hash: &str,
-        total_gas: u64,
-        hostio_calls: u64,
-    ) -> Profile {
-        let mut by_type = HashMap::new();
-        by_type.insert("storage_load".to_string(), 10);
-
-        Profile {
-            version: "1.0.0".to_string(),
-            transaction_hash: tx_hash.to_string(),
-            total_gas,
-            hostio_summary: HostIoSummary {
-                total_calls: hostio_calls,
-                by_type,
-                total_hostio_gas: 45000,
-            },
-            hot_paths: vec![HotPath {
-                stack: "main;func".to_string(),
-                gas: 1000,
-                percentage: 10.0,
-                source_hint: None,
-            }],
-            generated_at: "2025-02-14T10:00:00Z".to_string(),
-        }
-    }
-
-    #[test]
-    fn test_generate_diff_basic() {
-        let baseline = create_test_profile("0xaaa", 100000, 25);
-        let target = create_test_profile("0xbbb", 150000, 35);
-
-        let diff = generate_diff(&baseline, &target).unwrap();
-
-        assert_eq!(diff.baseline.total_gas, 100000);
-        assert_eq!(diff.target.total_gas, 150000);
-        assert_eq!(diff.deltas.gas.absolute_change, 50000);
-        assert_eq!(diff.deltas.gas.percent_change, 50.0);
-        assert_eq!(diff.summary.status, "PASSED");
-    }
-
-    #[test]
-    fn test_generate_diff_identical_profiles() {
-        let baseline = create_test_profile("0xaaa", 100000, 25);
-        let target = baseline.clone();
-
-        let diff = generate_diff(&baseline, &target).unwrap();
-
-        assert!(diff.summary.warning.is_some());
-        assert!(diff
-            .summary
-            .warning
-            .unwrap()
-            .contains("identical"));
-    }
-
-    #[test]
-    fn test_generate_diff_incompatible_versions() {
-        let mut baseline = create_test_profile("0xaaa", 100000, 25);
-        let mut target = create_test_profile("0xbbb", 150000, 35);
-
-        baseline.version = "1.0.0".to_string();
-        target.version = "2.0.0".to_string();
-
-        let result = generate_diff(&baseline, &target);
-        assert!(result.is_err());
-
-        if let Err(DiffError::IncompatibleVersions(v1, v2)) = result {
-            assert_eq!(v1, "1.0.0");
-            assert_eq!(v2, "2.0.0");
-        } else {
-            panic!("Expected IncompatibleVersions error");
-        }
-    }
-
-    #[test]
-    fn test_generate_diff_improvement() {
-        let baseline = create_test_profile("0xaaa", 150000, 35);
-        let target = create_test_profile("0xbbb", 100000, 25);
-
-        let diff = generate_diff(&baseline, &target).unwrap();
-
-        assert_eq!(diff.deltas.gas.absolute_change, -50000);
-        assert!(diff.deltas.gas.percent_change < 0.0);
-    }
 }
