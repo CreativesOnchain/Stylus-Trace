@@ -2,9 +2,9 @@
 //!
 //! Includes all integration and unit tests for the diffing functionality.
 
-use stylus_trace_studio::diff::*;
-use stylus_trace_studio::parser::schema::{HotPath, HostIoSummary, Profile};
 use std::collections::HashMap;
+use stylus_trace_studio::diff::*;
+use stylus_trace_studio::parser::schema::{HostIoSummary, HotPath, Profile};
 
 // ============================================================================
 // SHARED TEST HELPERS
@@ -114,15 +114,33 @@ mod output_tests {
         let report = DiffReport {
             diff_version: "1.0.0".to_string(),
             generated_at: "now".to_string(),
-            baseline: ProfileMetadata { transaction_hash: "0x1".to_string(), total_gas: 100, generated_at: "now".to_string() },
-            target: ProfileMetadata { transaction_hash: "0x2".to_string(), total_gas: 120, generated_at: "now".to_string() },
+            baseline: ProfileMetadata {
+                transaction_hash: "0x1".to_string(),
+                total_gas: 100,
+                generated_at: "now".to_string(),
+            },
+            target: ProfileMetadata {
+                transaction_hash: "0x2".to_string(),
+                total_gas: 120,
+                generated_at: "now".to_string(),
+            },
             deltas: Deltas {
-                gas: GasDelta { baseline: 100, target: 120, absolute_change: 20, percent_change: 20.0 },
+                gas: GasDelta {
+                    baseline: 100,
+                    target: 120,
+                    absolute_change: 20,
+                    percent_change: 20.0,
+                },
                 hostio: HostIoDelta::default(),
                 hot_paths: HotPathsDelta::default(),
             },
             threshold_violations: vec![],
-            summary: DiffSummary { status: "FAILED".to_string(), violation_count: 1, has_regressions: true, warning: None },
+            summary: DiffSummary {
+                status: "FAILED".to_string(),
+                violation_count: 1,
+                has_regressions: true,
+                warning: None,
+            },
         };
         let out = render_terminal_diff(&report);
         assert!(out.contains("Total Gas: 100 -> 120 (+20.00%)"));
@@ -138,8 +156,16 @@ mod threshold_tests {
 
     #[test]
     fn test_gas_threshold_exceeded_logic() {
-        let delta = GasDelta { baseline: 100, target: 150, absolute_change: 50, percent_change: 50.0 };
-        let thresholds = GasThresholds { max_increase_percent: Some(10.0), ..Default::default() };
+        let delta = GasDelta {
+            baseline: 100,
+            target: 150,
+            absolute_change: 50,
+            percent_change: 50.0,
+        };
+        let thresholds = GasThresholds {
+            max_increase_percent: Some(10.0),
+            ..Default::default()
+        };
         let mut v = vec![];
         check_gas_thresholds(&delta, &thresholds, &mut v);
         assert_eq!(v.len(), 1);
@@ -147,9 +173,17 @@ mod threshold_tests {
 
     #[test]
     fn test_create_summary_logic() {
-        let v = vec![ThresholdViolation { metric: "m".to_string(), severity: "error".to_string(), ..Default::default() }];
+        let v = vec![ThresholdViolation {
+            metric: "m".to_string(),
+            severity: "error".to_string(),
+            ..Default::default()
+        }];
         assert_eq!(create_summary(&v).status, "FAILED");
-        let v2 = vec![ThresholdViolation { metric: "m".to_string(), severity: "warning".to_string(), ..Default::default() }];
+        let v2 = vec![ThresholdViolation {
+            metric: "m".to_string(),
+            severity: "warning".to_string(),
+            ..Default::default()
+        }];
         assert_eq!(create_summary(&v2).status, "WARNING");
     }
 }
@@ -169,28 +203,48 @@ fn test_complex_regression_scenario() {
     let target = create_full_test_profile("0x2", "1.0.0", 200000, 20, t_types, 2000, vec![]);
 
     let mut diff = generate_diff(&baseline, &target).unwrap();
-    
+
     let mut limits = HashMap::new();
     limits.insert("storage_load".to_string(), 5);
     let config = ThresholdConfig {
-        gas: GasThresholds { max_increase_percent: Some(10.0), ..Default::default() },
-        hostio: HostIOThresholds { limits: Some(limits), ..Default::default() },
+        gas: GasThresholds {
+            max_increase_percent: Some(10.0),
+            ..Default::default()
+        },
+        hostio: HostIOThresholds {
+            limits: Some(limits),
+            ..Default::default()
+        },
         ..Default::default()
     };
 
     let v = check_thresholds(&mut diff, &config);
-    assert!(v.iter().any(|violation| violation.metric == "gas.max_increase_percent"));
-    assert!(v.iter().any(|violation| violation.metric.contains("storage_load")));
+    assert!(v
+        .iter()
+        .any(|violation| violation.metric == "gas.max_increase_percent"));
+    assert!(v
+        .iter()
+        .any(|violation| violation.metric.contains("storage_load")));
 }
 
 #[test]
 fn test_hot_paths_comparison_logic() {
-    let b_paths = vec![HotPath { stack: "A;B".to_string(), gas: 100, percentage: 50.0, source_hint: None }];
-    let t_paths = vec![HotPath { stack: "A;B".to_string(), gas: 150, percentage: 75.0, source_hint: None }];
-    
+    let b_paths = vec![HotPath {
+        stack: "A;B".to_string(),
+        gas: 100,
+        percentage: 50.0,
+        source_hint: None,
+    }];
+    let t_paths = vec![HotPath {
+        stack: "A;B".to_string(),
+        gas: 150,
+        percentage: 75.0,
+        source_hint: None,
+    }];
+
     let b = create_full_test_profile("0x1", "1.0.0", 200, 0, HashMap::new(), 0, b_paths);
     let t = create_full_test_profile("0x2", "1.0.0", 200, 0, HashMap::new(), 0, t_paths);
-    
+
     let diff = generate_diff(&b, &t).unwrap();
     assert_eq!(diff.deltas.hot_paths.common_paths.len(), 1);
     assert_eq!(diff.deltas.hot_paths.common_paths[0].percent_change, 50.0);

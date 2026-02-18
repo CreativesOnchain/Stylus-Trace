@@ -1,6 +1,11 @@
 //! Source mapping service for Stylus WASM binaries.
 //!
-//! Translates binary offsets (PCs) to source locations (file:line) using DWARF.
+//! # ⚠️ CURRENTLY NON-FUNCTIONAL
+//! This service translates binary offsets (PCs) to source locations (file:line) using DWARF.
+//! However, it is currently non-functional because the Arbitrum `stylusTracer` does not
+//! provide the required Program Counter (PC) offsets for WASM execution.
+//!
+//! This code is preserved for future use when tracer support is improved.
 
 //! Source mapping service for Stylus WASM binaries.
 //!

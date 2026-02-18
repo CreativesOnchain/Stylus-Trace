@@ -3,12 +3,10 @@
 //! Handles the math for computing differences between profiles,
 //! including edge cases like division by zero.
 
-use crate::parser::schema::{HotPath, HostIoSummary, Profile};
+use crate::parser::schema::{HostIoSummary, HotPath, Profile};
 use std::collections::HashMap;
 
-use super::schema::{
-    GasDelta, HostIOTypeChange, HostIoDelta, HotPathComparison, HotPathsDelta,
-};
+use super::schema::{GasDelta, HostIOTypeChange, HostIoDelta, HotPathComparison, HotPathsDelta};
 
 /// Calculate gas delta between two profiles
 ///
@@ -55,10 +53,8 @@ pub fn calculate_hostio_delta(
     let gas_percent_change = safe_percentage(gas_change, baseline_total_gas);
 
     // By-type changes
-    let by_type_changes = calculate_hostio_type_changes(
-        &baseline_summary.by_type,
-        &target_summary.by_type,
-    );
+    let by_type_changes =
+        calculate_hostio_type_changes(&baseline_summary.by_type, &target_summary.by_type);
 
     HostIoDelta {
         baseline_total_calls,
@@ -117,10 +113,7 @@ pub fn calculate_hostio_type_changes(
 ///
 /// # Returns
 /// HotPathsDelta showing common, disappeared, and new paths
-pub fn compare_hot_paths(
-    baseline_paths: &[HotPath],
-    target_paths: &[HotPath],
-) -> HotPathsDelta {
+pub fn compare_hot_paths(baseline_paths: &[HotPath], target_paths: &[HotPath]) -> HotPathsDelta {
     // Create maps for easier lookup
     let baseline_map: HashMap<&str, &HotPath> = baseline_paths
         .iter()
@@ -198,10 +191,7 @@ pub fn safe_percentage(change: i64, baseline: u64) -> f64 {
 ///
 /// # Returns
 /// Ok if compatible, Err with reason if not
-pub fn check_compatibility(
-    baseline: &Profile,
-    target: &Profile,
-) -> Result<(), super::DiffError> {
+pub fn check_compatibility(baseline: &Profile, target: &Profile) -> Result<(), super::DiffError> {
     // Check version compatibility
     if baseline.version != target.version {
         return Err(super::DiffError::IncompatibleVersions(
@@ -222,6 +212,5 @@ pub fn check_compatibility(
 /// # Returns
 /// true if the profiles have identical transaction hashes
 pub fn are_profiles_identical(baseline: &Profile, target: &Profile) -> bool {
-    baseline.transaction_hash == target.transaction_hash
-        && baseline.total_gas == target.total_gas
+    baseline.transaction_hash == target.transaction_hash && baseline.total_gas == target.total_gas
 }

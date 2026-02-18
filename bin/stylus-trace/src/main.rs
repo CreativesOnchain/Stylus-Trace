@@ -4,7 +4,7 @@
 //! Generates flamegraphs and detailed profiles from transaction traces.
 
 use anyhow::{Context, Result};
-use clap::{Parser, Subcommand, Args};
+use clap::{Args, Parser, Subcommand};
 use env_logger::Env;
 use std::path::PathBuf;
 
@@ -68,10 +68,6 @@ pub enum Commands {
         /// Use Stylus Ink units (scaled by 10,000)
         #[arg(long)]
         ink: bool,
-
-        /// Path to WASM binary with debug symbols (for source-to-line mapping)
-        #[arg(long)]
-        wasm: Option<PathBuf>,
 
         /// Optional tracer name (defaults to "stylusTracer" if omitted)
         #[arg(long)]
@@ -167,7 +163,6 @@ fn handle_capture(command: Commands) -> Result<()> {
         width,
         summary,
         ink,
-        wasm,
         tracer,
         baseline,
         threshold_percent,
@@ -202,9 +197,9 @@ fn handle_capture(command: Commands) -> Result<()> {
             print_summary: summary,
             tracer,
             ink,
-            wasm,
             baseline,
             threshold_percent,
+            wasm: None,
         };
 
         validate_args(&args).context("Invalid capture arguments")?;

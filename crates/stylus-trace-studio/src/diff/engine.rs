@@ -52,8 +52,7 @@ pub fn generate_diff(baseline: &Profile, target: &Profile) -> Result<DiffReport,
     // Step 3: Calculate all deltas
     let gas_delta = calculate_gas_delta(baseline.total_gas, target.total_gas);
 
-    let hostio_delta =
-        calculate_hostio_delta(&baseline.hostio_summary, &target.hostio_summary);
+    let hostio_delta = calculate_hostio_delta(&baseline.hostio_summary, &target.hostio_summary);
 
     let hot_paths_delta = compare_hot_paths(&baseline.hot_paths, &target.hot_paths);
 

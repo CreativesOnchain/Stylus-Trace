@@ -137,5 +137,3 @@ fn shorten_stack(stack: &str) -> String {
         format!("...;{};{}", parts[parts.len() - 2], parts[parts.len() - 1])
     }
 }
-
-

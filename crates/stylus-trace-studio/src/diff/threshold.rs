@@ -135,9 +135,7 @@ pub fn check_gas_thresholds(
 
     // Check absolute increase
     if let Some(max_absolute) = thresholds.max_increase_absolute {
-        if gas_delta.absolute_change > 0
-            && gas_delta.absolute_change as u64 > max_absolute
-        {
+        if gas_delta.absolute_change > 0 && gas_delta.absolute_change as u64 > max_absolute {
             violations.push(ThresholdViolation {
                 metric: "gas.max_increase_absolute".to_string(),
                 threshold: max_absolute as f64,
@@ -205,10 +203,7 @@ fn check_hot_path_thresholds(
 
 /// Create summary based on violations
 pub fn create_summary(violations: &[ThresholdViolation]) -> DiffSummary {
-    let error_count = violations
-        .iter()
-        .filter(|v| v.severity == "error")
-        .count();
+    let error_count = violations.iter().filter(|v| v.severity == "error").count();
     let warning_count = violations
         .iter()
         .filter(|v| v.severity == "warning")

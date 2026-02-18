@@ -1,7 +1,6 @@
 use crate::flamegraph::FlamegraphConfig;
-use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
-
+use std::path::PathBuf;
 
 /// Arguments for the capture command
 ///

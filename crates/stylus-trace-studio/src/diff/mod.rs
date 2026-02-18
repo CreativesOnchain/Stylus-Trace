@@ -24,19 +24,15 @@ mod threshold;
 
 // Public API exports
 pub use engine::generate_diff;
+pub use normalizer::{calculate_gas_delta, calculate_hostio_type_changes, safe_percentage};
 pub use output::render_terminal_diff;
 pub use schema::{
-    DiffReport, DiffSummary, Deltas, GasDelta, HostIoDelta, HostIOTypeChange, HotPathComparison,
+    Deltas, DiffReport, DiffSummary, GasDelta, HostIOTypeChange, HostIoDelta, HotPathComparison,
     HotPathsDelta, ProfileMetadata, ThresholdViolation,
 };
 pub use threshold::{
     check_gas_thresholds, check_thresholds, create_summary, load_thresholds, GasThresholds,
     HostIOThresholds, HotPathThresholds, ThresholdConfig,
 };
-pub use normalizer::{
-    calculate_gas_delta, calculate_hostio_type_changes, safe_percentage,
-};
 
 pub use crate::utils::error::DiffError;
-
-

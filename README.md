@@ -101,22 +101,11 @@ stylus-trace capture \
 
 ---
 
-## Source-to-Line Mapping
+## 📖 Source-to-Line Mapping (Reserved Feature)
 
-To enable line-level resolution in your reports and flamegraphs, you must compile your Stylus contract with **DWARF debug symbols**.
+Line-level resolution in reports and flamegraphs is a **reserved feature**. While the engine supports DWARF debug symbols, it is currently **non-functional** because the Arbitrum `stylusTracer` does not yet provide the required Program Counter (PC) offsets for WASM execution.
 
-### 1. Enable Debug Info
-Update your contract's `Cargo.toml`:
-
-   ```toml
-   [profile.release]
-   debug = true
-   ```
-
-2. **Build your contract**:
-   ```bash
-   cargo build --release --target wasm32-unknown-unknown
-   ```
+This feature will be enabled automatically once upstream tracer support is available.
 
 ---
 
@@ -131,7 +120,7 @@ Update your contract's `Cargo.toml`:
 | `--output` | Save JSON profile to path | `artifacts/profile.json` |
 | `--summary` | Print a text-based summary to terminal | `false` |
 | `--ink` | Use Stylus Ink units (scaled 10,000x) | `false` |
-| `--wasm` | Path to WASM binary for source mapping | - |
+| `--tracer` | Optional tracer name | `stylusTracer` |
 
 ---
 
