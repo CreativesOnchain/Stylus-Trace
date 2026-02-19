@@ -11,6 +11,7 @@ Stylus Trace turns opaque Stylus transaction traces into **interactive flamegrap
 ## 🚀 Key Features
 
 - **Interactive Flamegraphs**: Visualize execution paths with interactive SVG snapshots.
+- **Optimization Insights**: Get qualitative feedback on loop redundancies, high-cost storage access, and potential caching opportunities.
 - **Gas & Ink Analysis**: Seamlessly toggle between standard Gas and high-precision Stylus Ink (10,000x) units.
 - **Transaction Dashboards**: Get a "hot path" summary directly in your terminal.
 - **Automated Artifacts**: Built-in organization for profiles and graphs in a dedicated `artifacts/` folder.
@@ -116,11 +117,28 @@ This feature will be enabled automatically once upstream tracer support is avail
 |------|-------------|---------|
 | `--tx` | **(Required)** Transaction hash to profile | - |
 | `--rpc` | RPC endpoint URL | `http://localhost:8547` |
-| `--flamegraph` | Generate an SVG flamegraph | `artifacts/flamegraph.svg` |
-| `--output` | Save JSON profile to path | `artifacts/profile.json` |
+| `--flamegraph` | Generate an SVG flamegraph | `artifacts/capture/flamegraph.svg` |
+| `--output` | Save JSON profile to path | `artifacts/capture/profile.json` |
 | `--summary` | Print a text-based summary to terminal | `false` |
 | `--ink` | Use Stylus Ink units (scaled 10,000x) | `false` |
 | `--tracer` | Optional tracer name | `stylusTracer` |
+| `--baseline` | Path to baseline profile for on-the-fly diffing | - |
+| `--threshold-percent` | Simple percentage tolerance for **all** metrics (Gas, HostIOs, Hot Paths) | - |
+| `--gas-threshold` | Specific percentage tolerance for Gas regressions only | - |
+| `--hostio-threshold` | Specific percentage tolerance for total HostIO calls only | - |
+
+### `diff`
+| Flag | Description | Default |
+|------|-------------|---------|
+| `<BASELINE>` | **(Required)** Path to baseline profile JSON | - |
+| `<TARGET>` | **(Required)** Path to target profile JSON | - |
+| `--threshold-percent` | Simple percentage tolerance for **all** metrics (Gas, HostIOs, Hot Paths) | - |
+| `--gas-threshold` | Focus strictly on Gas regressions (overrides TOML/defaults) | - |
+| `--hostio-threshold` | Focus strictly on HostIO regressions (overrides TOML/defaults) | - |
+| `--threshold` | Optional threshold config file (TOML) | `thresholds.toml` (auto-loaded if exists) |
+| `--summary` | Print human-readable summary to terminal | `true` |
+| `--output` | Path to write the diff report JSON | `artifacts/diff/diff_report.json` |
+| `--flamegraph` | Path to write visual diff flamegraph SVG | `artifacts/diff/diff.svg` |
 
 ---
 

@@ -26,6 +26,10 @@ pub struct DiffReport {
     /// List of threshold violations (if any)
     pub threshold_violations: Vec<ThresholdViolation>,
 
+    /// Analysis insights (Option 4: Heuristics)
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub insights: Vec<AnalysisInsight>,
+
     /// Summary of diff results
     pub summary: DiffSummary,
 }
@@ -179,4 +183,34 @@ pub struct DiffSummary {
     /// Optional warning message
     #[serde(skip_serializing_if = "Option::is_none")]
     pub warning: Option<String>,
+}
+
+/// A qualitative insight from the trace analysis
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AnalysisInsight {
+    /// Category of the insight (e.g., "Storage", "HostIO")
+    pub category: String,
+
+    /// Human-readable description
+    pub description: String,
+
+    /// Severity of the insight
+    pub severity: InsightSeverity,
+
+    /// Optional tag for grouping
+    pub tag: Option<String>,
+}
+
+/// Severity level for analysis insights
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum InsightSeverity {
+    /// Purely informational
+    Info,
+    /// Suggests a possible optimization
+    Low,
+    /// Significant optimization opportunity or suspicious pattern
+    Medium,
+    /// Urgent performance issue
+    High,
 }

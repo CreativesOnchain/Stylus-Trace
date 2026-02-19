@@ -1,0 +1,14 @@
+[gas]
+max_increase_percent = 5.0
+max_increase_absolute = 1000000
+
+[hostio]
+max_total_calls_increase_percent = 10.0
+limits = { storage_load = 5, emit_log = 2 }
+
+[hot_paths]
+warn_individual_increase_percent = 20.0
+
+
+
+

@@ -40,6 +40,12 @@ pub struct CaptureArgs {
     /// Simple gas increase threshold percentage for on-the-fly diffing
     pub threshold_percent: Option<f64>,
 
+    /// Specific gas increase threshold percentage
+    pub gas_threshold: Option<f64>,
+
+    /// Specific HostIO calls increase threshold percentage
+    pub hostio_threshold: Option<f64>,
+
     /// Path to WASM binary (optional)
     pub wasm: Option<PathBuf>,
 }
@@ -59,6 +65,8 @@ impl Default for CaptureArgs {
             wasm: None,
             baseline: None,
             threshold_percent: None,
+            gas_threshold: None,
+            hostio_threshold: None,
         }
     }
 }
@@ -103,11 +111,20 @@ pub struct DiffArgs {
     /// Simple gas increase threshold percentage (e.g., 5.0)
     pub threshold_percent: Option<f64>,
 
+    /// Specific gas increase threshold percentage
+    pub gas_threshold: Option<f64>,
+
+    /// Specific HostIO calls increase threshold percentage
+    pub hostio_threshold: Option<f64>,
+
     /// Print a human-readable summary to the terminal
     pub summary: bool,
 
     /// Path to write the diff report JSON
     pub output: Option<PathBuf>,
+
+    /// Path to write the visual diff flamegraph SVG
+    pub output_svg: Option<PathBuf>,
 }
 
 impl Default for DiffArgs {
@@ -117,8 +134,11 @@ impl Default for DiffArgs {
             target: PathBuf::new(),
             threshold_file: None,
             threshold_percent: None,
+            gas_threshold: None,
+            hostio_threshold: None,
             summary: true,
             output: None,
+            output_svg: None,
         }
     }
 }

@@ -5,6 +5,7 @@
 
 use super::hostio::{extract_hostio_events, HostIoStats};
 use super::schema::Profile;
+use crate::aggregator::stack_builder::CollapsedStack;
 use crate::utils::config::{
     GAS_FIELD_NAMES, GAS_TO_INK_MULTIPLIER, MAX_REASONABLE_GAS, SCHEMA_VERSION, STEP_FIELD_NAMES,
 };
@@ -353,6 +354,7 @@ pub fn parse_gas_value(value: &str) -> Result<u64, ParseError> {
 pub fn to_profile(
     parsed_trace: &ParsedTrace,
     mut hot_paths: Vec<super::schema::HotPath>,
+    all_stacks: Option<Vec<CollapsedStack>>,
     mapper: Option<&super::source_map::SourceMapper>,
 ) -> Profile {
     use chrono::Utc;
@@ -368,6 +370,7 @@ pub fn to_profile(
         total_gas: parsed_trace.total_gas_used,
         hostio_summary: parsed_trace.hostio_stats.to_summary(),
         hot_paths,
+        all_stacks,
         generated_at: Utc::now().to_rfc3339(),
     }
 }

@@ -41,12 +41,12 @@ pub enum Commands {
         #[arg(short, long)]
         tx: String,
 
-        /// Output path for JSON profile (placed in artifacts/ by default)
-        #[arg(short, long, default_value = "artifacts/profile.json")]
+        /// Output path for JSON profile (placed in artifacts/capture/ by default)
+        #[arg(short, long, default_value = "profile.json")]
         output: PathBuf,
 
-        /// Output path for SVG flamegraph (placed in artifacts/ by default)
-        #[arg(short, long, default_missing_value = "artifacts/flamegraph.svg", num_args = 0..=1)]
+        /// Output path for SVG flamegraph (placed in artifacts/capture/ by default)
+        #[arg(short, long, default_missing_value = "flamegraph.svg", num_args = 0..=1)]
         flamegraph: Option<PathBuf>,
 
         /// Number of top hot paths to include
@@ -77,9 +77,17 @@ pub enum Commands {
         #[arg(long)]
         baseline: Option<PathBuf>,
 
-        /// Simple gas increase threshold percentage for on-the-fly diffing
-        #[arg(short = 'p', long)]
+        /// Simple increase threshold percentage (e.g., 5.0). Applies to Gas, HostIOs, and Hot Paths.
+        #[arg(short = 'p', long = "threshold-percent")]
         threshold_percent: Option<f64>,
+
+        /// Specific gas increase threshold percentage
+        #[arg(long = "gas-threshold")]
+        gas_threshold: Option<f64>,
+
+        /// Specific HostIO calls increase threshold percentage
+        #[arg(long = "hostio-threshold")]
+        hostio_threshold: Option<f64>,
     },
 
     /// Compare two transaction profiles and detect regressions
@@ -115,17 +123,29 @@ pub struct DiffSubArgs {
     #[arg(short, long)]
     pub threshold: Option<PathBuf>,
 
-    /// Simple gas increase threshold percentage (e.g., 5.0)
-    #[arg(short = 'p', long)]
+    /// Simple increase threshold percentage (e.g., 5.0). Applies to Gas, HostIOs, and Hot Paths.
+    #[arg(short = 'p', long = "threshold-percent")]
     pub threshold_percent: Option<f64>,
+
+    /// Focus strictly on Gas regressions. Overrides TOML settings and suppresses alerts for HostIO/HotPaths.
+    #[arg(long = "gas-threshold")]
+    pub gas_threshold: Option<f64>,
+
+    /// Focus strictly on HostIO regressions. Overrides TOML settings and suppresses alerts for Gas/HotPaths.
+    #[arg(long = "hostio-threshold")]
+    pub hostio_threshold: Option<f64>,
 
     /// Print a human-readable summary to the terminal
     #[arg(short, long, default_value_t = true)]
     pub summary: bool,
 
     /// Path to write the diff report JSON
-    #[arg(short, long)]
+    #[arg(short, long, default_value = "diff_report.json")]
     pub output: Option<PathBuf>,
+
+    /// Path to write the visual diff flamegraph SVG
+    #[arg(short = 'f', long, default_missing_value = "diff.svg", num_args = 0..=1)]
+    pub flamegraph: Option<PathBuf>,
 }
 
 fn main() -> Result<()> {
@@ -166,16 +186,18 @@ fn handle_capture(command: Commands) -> Result<()> {
         tracer,
         baseline,
         threshold_percent,
+        gas_threshold,
+        hostio_threshold,
     } = command
     {
         // Enforce artifacts/ directory for relative paths
-        output = resolve_artifact_path(output);
+        output = resolve_artifact_path(output, "capture");
 
         if let Some(path) = flamegraph {
-            flamegraph = Some(resolve_artifact_path(path));
+            flamegraph = Some(resolve_artifact_path(path, "capture"));
         }
 
-        let baseline = baseline.map(resolve_artifact_path);
+        let baseline = baseline.map(|p| resolve_artifact_path(p, "capture"));
 
         // Build flamegraph configuration if requested
         let flamegraph_config = flamegraph.as_ref().map(|_| {
@@ -199,6 +221,8 @@ fn handle_capture(command: Commands) -> Result<()> {
             ink,
             baseline,
             threshold_percent,
+            gas_threshold,
+            hostio_threshold,
             wasm: None,
         };
 
@@ -212,12 +236,21 @@ fn handle_capture(command: Commands) -> Result<()> {
 /// Handle the diff command logic
 fn handle_diff(args: &DiffSubArgs) -> Result<()> {
     let studio_args = stylus_trace_studio::commands::models::DiffArgs {
-        baseline: args.baseline.clone(),
-        target: args.target.clone(),
+        baseline: resolve_artifact_path(args.baseline.clone(), "capture"),
+        target: resolve_artifact_path(args.target.clone(), "capture"),
         threshold_file: args.threshold.clone(),
         threshold_percent: args.threshold_percent,
         summary: args.summary,
-        output: args.output.clone(),
+        output: args
+            .output
+            .as_ref()
+            .map(|p| resolve_artifact_path(p.clone(), "diff")),
+        output_svg: args
+            .flamegraph
+            .as_ref()
+            .map(|p| resolve_artifact_path(p.clone(), "diff")),
+        gas_threshold: args.gas_threshold,
+        hostio_threshold: args.hostio_threshold,
     };
 
     stylus_trace_studio::commands::diff::execute_diff(studio_args)
@@ -225,14 +258,14 @@ fn handle_diff(args: &DiffSubArgs) -> Result<()> {
     Ok(())
 }
 
-/// Resolves a path to the artifacts directory if it's a simple filename
-fn resolve_artifact_path(path: PathBuf) -> PathBuf {
+/// Resolves a path to the artifacts/<category> directory if it's a simple filename
+fn resolve_artifact_path(path: PathBuf, category: &str) -> PathBuf {
     if path
         .parent()
         .map(|p| p.as_os_str().is_empty())
         .unwrap_or(true)
     {
-        PathBuf::from("artifacts").join(path)
+        PathBuf::from("artifacts").join(category).join(path)
     } else {
         path
     }

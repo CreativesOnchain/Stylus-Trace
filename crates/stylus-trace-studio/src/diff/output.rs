@@ -15,8 +15,35 @@ pub fn render_terminal_diff(report: &DiffReport) -> String {
     out.push_str(&render_hostio_summary(report));
     out.push_str(&render_hostio_details(report));
     out.push_str(&render_hot_paths(report));
+    out.push_str(&render_insights(report));
     out.push_str(&render_status(report));
 
+    out
+}
+
+fn render_insights(report: &DiffReport) -> String {
+    let mut out = String::new();
+
+    if !report.insights.is_empty() {
+        out.push_str("\n💡 ");
+        out.push_str(&"Optimization Insights:".bold().to_string());
+        out.push('\n');
+
+        for insight in &report.insights {
+            let color_desc = match insight.severity {
+                super::schema::InsightSeverity::High => insight.description.red().bold(),
+                super::schema::InsightSeverity::Medium => insight.description.yellow().bold(),
+                super::schema::InsightSeverity::Low => insight.description.cyan(),
+                super::schema::InsightSeverity::Info => insight.description.normal(),
+            };
+
+            out.push_str(&format!(
+                "  • [{}] {}\n",
+                insight.category.blue(),
+                color_desc
+            ));
+        }
+    }
     out
 }
 

@@ -156,7 +156,11 @@ pub fn generate_flamegraph(
     let mut root = Node::new("root".to_string());
     for stack in stacks {
         // format: "a;b;c" and we have weight separately
-        let stack_parts: Vec<&str> = stack.stack.split(';').collect();
+        let mut stack_parts: Vec<&str> = stack.stack.split(';').collect();
+        // Skip redundant root if present
+        if stack_parts.first() == Some(&"root") {
+            stack_parts.remove(0);
+        }
         root.insert(&stack_parts, stack.weight, stack.last_pc);
     }
 
@@ -405,12 +409,18 @@ fn render_hot_path_table(
     let mut lines = Vec::new();
 
     lines.push("  🚀 EXECUTION HOT PATHS".to_string());
-    lines.push("  ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━┓".to_string());
+    lines.push(
+        "  ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━┓"
+            .to_string(),
+    );
     lines.push(format!(
-        "  ┃ {:<42} ┃ {:^12} ┃ {:^12} ┃ {:^7} ┃ {:^19} ┃",
-        "Execution Stack (Hottest First)", "GAS", "INK (x10k)", "%", "Source Location"
+        "  ┃ {:<42} ┃ {:^12} ┃ {:^12} ┃ {:^7} ┃",
+        "Execution Stack (Hottest First)", "GAS", "INK (x10k)", "%"
     ));
-    lines.push("  ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━╋━━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━┫".to_string());
+    lines.push(
+        "  ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━╋━━━━━━━━━┫"
+            .to_string(),
+    );
 
     for path in hot_paths.iter().take(max_lines) {
         let weight_ink = path.gas;
@@ -423,25 +433,17 @@ fn render_hot_path_table(
         let reset = "\x1b[0m";
 
         let display_stack = truncate_stack(&path.stack, 42);
-        let display_source = if let Some(hint) = &path.source_hint {
-            let file_name = hint.file.split('/').next_back().unwrap_or(&hint.file);
-            let s = if let Some(line) = hint.line {
-                format!("{}:{}", file_name, line)
-            } else {
-                file_name.to_string()
-            };
-            truncate_stack(&s, 19)
-        } else {
-            "-".to_string()
-        };
 
         lines.push(format!(
-            "  ┃ {}{:<42}{} ┃ {:>12} ┃ {:>12} ┃ {:>6.1}% ┃ {:<19} ┃",
-            color, display_stack, reset, weight_gas, weight_ink, percentage, display_source
+            "  ┃ {}{:<42}{} ┃ {:>12} ┃ {:>12} ┃ {:>6.1}% ┃",
+            color, display_stack, reset, weight_gas, weight_ink, percentage
         ));
     }
 
-    lines.push("  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━┻━━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━┛".to_string());
+    lines.push(
+        "  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━┻━━━━━━━━━┛"
+            .to_string(),
+    );
     lines
 }
 

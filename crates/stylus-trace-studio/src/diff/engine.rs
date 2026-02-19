@@ -75,7 +75,10 @@ pub fn generate_diff(baseline: &Profile, target: &Profile) -> Result<DiffReport,
         summary.warning = Some("Baseline and target profiles are identical".to_string());
     }
 
-    // Step 5: Build the report
+    // Step 5: Heuristic Analysis (Option 4)
+    let insights = super::analyzer::analyze_profile(target);
+
+    // Step 6: Build the report
     Ok(DiffReport {
         diff_version: "1.0.0".to_string(),
         generated_at: Utc::now().to_rfc3339(),
@@ -83,6 +86,7 @@ pub fn generate_diff(baseline: &Profile, target: &Profile) -> Result<DiffReport,
         target: target_meta,
         deltas,
         threshold_violations: Vec::new(), // Will be populated by check_thresholds
+        insights,
         summary,
     })
 }

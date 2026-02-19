@@ -21,6 +21,7 @@ fn create_test_profile() -> Profile {
             percentage: 50.0,
             source_hint: None,
         }],
+        all_stacks: None,
         generated_at: "2024-01-01T00:00:00Z".to_string(),
     }
 }
