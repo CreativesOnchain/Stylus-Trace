@@ -104,22 +104,61 @@ fn render_hot_paths(report: &DiffReport) -> String {
     let hot_paths = &report.deltas.hot_paths;
 
     if !hot_paths.common_paths.is_empty() {
-        out.push_str("\nTop Hot Path Regressions/Improvements:\n");
-        let mut hp_changes = hot_paths.common_paths.clone();
-        hp_changes.sort_by(|a, b| b.gas_change.abs().cmp(&a.gas_change.abs()));
-
-        for hp in hp_changes.iter().take(5) {
-            let symbol = if hp.gas_change > 0 { "📈" } else { "📉" };
-            out.push_str(&format!(
-                "  {} {}: {} -> {} ({:+.2}%)\n",
-                symbol,
-                shorten_stack(&hp.stack),
-                hp.baseline_gas,
-                hp.target_gas,
-                hp.percent_change
-            ));
-        }
+        out.push_str(&render_hot_path_comparison_table(report));
     }
+    out
+}
+
+fn render_hot_path_comparison_table(report: &DiffReport) -> String {
+    let mut out = String::new();
+    let hot_paths = &report.deltas.hot_paths;
+
+    out.push_str("\n  🚀 HOT PATH COMPARISON\n");
+    out.push_str(
+        "  ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━┳━━━━━━━━━━━━┓\n",
+    );
+    out.push_str(&format!(
+        "  ┃ {:<38} ┃ {:^12} ┃ {:^12} ┃ {:^10} ┃\n",
+        "Execution Stack (Common Changes)", "BASELINE", "TARGET", "DELTA"
+    ));
+    out.push_str(
+        "  ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━╋━━━━━━━━━━━━┫\n",
+    );
+
+    let mut hp_changes = hot_paths.common_paths.clone();
+    hp_changes.sort_by(|a, b| b.gas_change.abs().cmp(&a.gas_change.abs()));
+
+    for hp in hp_changes.iter().take(10) {
+        let delta_color = if hp.gas_change > 0 {
+            "\x1b[31;1m" // Bold Red
+        } else if hp.gas_change < 0 {
+            "\x1b[32;1m" // Bold Green
+        } else {
+            "\x1b[0m" // Reset
+        };
+        let reset = "\x1b[0m";
+
+        let display_stack = shorten_stack(&hp.stack);
+        let display_stack_fixed = if display_stack.len() > 38 {
+            format!("...{}", &display_stack[display_stack.len() - 35..])
+        } else {
+            format!("{:<38}", display_stack)
+        };
+
+        // Scale to Gas (ink / 10,000)
+        let baseline_gas = hp.baseline_gas / 10_000;
+        let target_gas = hp.target_gas / 10_000;
+
+        out.push_str(&format!(
+            "  ┃ {} ┃ {:>12} ┃ {:>12} ┃ {}{:>9.2}%{} ┃\n",
+            display_stack_fixed, baseline_gas, target_gas, delta_color, hp.percent_change, reset
+        ));
+    }
+
+    out.push_str(
+        "  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━┻━━━━━━━━━━━━┛\n",
+    );
+
     out
 }
 
