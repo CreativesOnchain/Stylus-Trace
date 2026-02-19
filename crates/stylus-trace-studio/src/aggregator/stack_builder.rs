@@ -8,12 +8,13 @@
 
 use crate::parser::{HostIoType, ParsedTrace};
 use log::debug;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// A single collapsed stack entry
 ///
 /// **Public** - used by flamegraph generator
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CollapsedStack {
     /// Stack trace as semicolon-separated string
     pub stack: String,

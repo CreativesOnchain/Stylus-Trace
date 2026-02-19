@@ -16,6 +16,7 @@
 //! let violations = check_thresholds(&diff, &thresholds);
 //! ```
 
+mod analyzer;
 mod engine;
 mod normalizer;
 mod output;
@@ -23,6 +24,7 @@ mod schema;
 mod threshold;
 
 // Public API exports
+pub use analyzer::analyze_profile;
 pub use engine::generate_diff;
 pub use normalizer::{calculate_gas_delta, calculate_hostio_type_changes, safe_percentage};
 pub use output::render_terminal_diff;

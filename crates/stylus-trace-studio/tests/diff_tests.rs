@@ -29,6 +29,7 @@ fn create_full_test_profile(
             total_hostio_gas: hostio_total_gas,
         },
         hot_paths,
+        all_stacks: None,
         generated_at: "2025-02-14T10:00:00Z".to_string(),
     }
 }
@@ -141,6 +142,7 @@ mod output_tests {
                 has_regressions: true,
                 warning: None,
             },
+            insights: vec![],
         };
         let out = render_terminal_diff(&report);
         assert!(out.contains("Total Gas: 100 -> 120 (+20.00%)"));

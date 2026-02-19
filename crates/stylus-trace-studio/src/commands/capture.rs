@@ -141,6 +141,7 @@ pub fn execute_capture(args: CaptureArgs) -> Result<()> {
     write_outputs(
         &args,
         &parsed_trace,
+        &stacks,
         hot_paths,
         mapper.as_ref(),
         svg_content,
@@ -156,6 +157,7 @@ pub fn execute_capture(args: CaptureArgs) -> Result<()> {
         let profile = to_profile(
             &parsed_trace,
             calculate_hot_paths(&stacks, 0, args.top_paths),
+            Some(stacks.clone()),
             mapper.as_ref(),
         );
 
@@ -213,13 +215,14 @@ fn initialize_source_mapper(wasm_path: Option<&PathBuf>) -> Option<SourceMapper>
 fn write_outputs(
     args: &CaptureArgs,
     parsed_trace: &ParsedTrace,
+    stacks: &[CollapsedStack],
     hot_paths: Vec<HotPath>,
     mapper: Option<&SourceMapper>,
     svg_content: Option<String>,
 ) -> Result<()> {
     info!("Writing output files...");
 
-    let profile = to_profile(parsed_trace, hot_paths, mapper);
+    let profile = to_profile(parsed_trace, hot_paths, Some(stacks.to_vec()), mapper);
 
     write_profile(&profile, &args.output_json).context("Failed to write profile JSON")?;
     info!("✓ Profile written to: {}", args.output_json.display());
@@ -250,6 +253,7 @@ fn print_transaction_summary(
     let profile = to_profile(
         parsed_trace,
         calculate_hot_paths(stacks, 0, args.top_paths),
+        None, // Stacks not needed for summary
         mapper,
     );
 

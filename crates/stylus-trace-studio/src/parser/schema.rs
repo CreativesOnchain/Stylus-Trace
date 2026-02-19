@@ -3,6 +3,7 @@
 //! This module defines the structure of JSON files we write to disk.
 //! Schema is versioned to allow future evolution.
 
+use crate::aggregator::stack_builder::CollapsedStack;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -23,6 +24,10 @@ pub struct Profile {
 
     /// Top hot paths (ranked by gas usage)
     pub hot_paths: Vec<HotPath>,
+
+    /// Complete execution stacks (optional, for full diff visualization)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub all_stacks: Option<Vec<CollapsedStack>>,
 
     /// Timestamp when profile was generated
     pub generated_at: String,
