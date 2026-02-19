@@ -147,6 +147,60 @@ mod output_tests {
         let out = render_terminal_diff(&report);
         assert!(out.contains("Total Gas: 100 -> 120 (+20.00%)"));
     }
+
+    #[test]
+    fn test_render_terminal_diff_with_hot_paths() {
+        let report = DiffReport {
+            diff_version: "1.0.0".to_string(),
+            generated_at: "now".to_string(),
+            baseline: ProfileMetadata {
+                transaction_hash: "0x1".to_string(),
+                total_gas: 1000,
+                generated_at: "now".to_string(),
+            },
+            target: ProfileMetadata {
+                transaction_hash: "0x2".to_string(),
+                total_gas: 1200,
+                generated_at: "now".to_string(),
+            },
+            deltas: Deltas {
+                gas: GasDelta {
+                    baseline: 1000,
+                    target: 1200,
+                    absolute_change: 200,
+                    percent_change: 20.0,
+                },
+                hostio: HostIoDelta::default(),
+                hot_paths: HotPathsDelta {
+                    common_paths: vec![HotPathComparison {
+                        stack: "main;execute".to_string(),
+                        baseline_gas: 5000000, // 500 gas
+                        target_gas: 6000000,   // 600 gas
+                        gas_change: 1000000,
+                        percent_change: 20.0,
+                    }],
+                    ..Default::default()
+                },
+            },
+            threshold_violations: vec![],
+            summary: DiffSummary {
+                status: "PASSED".to_string(),
+                violation_count: 0,
+                has_regressions: false,
+                warning: None,
+            },
+            insights: vec![],
+        };
+        let out = render_terminal_diff(&report);
+        assert!(out.contains("HOT PATH COMPARISON"));
+        assert!(out.contains("BASELINE"));
+        assert!(out.contains("TARGET"));
+        assert!(out.contains("DELTA"));
+        assert!(out.contains("main;execute"));
+        assert!(out.contains("500"));
+        assert!(out.contains("600"));
+        assert!(out.contains("20.00%"));
+    }
 }
 
 // ============================================================================
