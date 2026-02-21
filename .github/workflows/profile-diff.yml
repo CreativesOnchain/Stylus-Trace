@@ -1,0 +1,55 @@
+name: Stylus Profiling
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Start Nitro Dev Node
+        run: |
+          docker run --rm -d --name nitro-node -p 8547:8547 offchainlabs/nitro-node:latest --dev --http.addr 0.0.0.0
+          # Wait for node to be ready
+          until curl -s http://localhost:8547; do sleep 5; done
+
+      - name: Build and Deploy Contract
+        id: deploy
+        run: |
+          # Replace with your actual deployment script
+          # output tx_hash should be captured
+          echo "tx_hash=0x..." >> $GITHUB_OUTPUT
+
+      - name: Restore Baseline
+        uses: actions/cache@v4
+        with:
+          path: artifacts/capture/profile.json
+          key: stylus-profile-baseline-${{ github.base_ref || github.ref_name }}
+
+      - name: Run Stylus Trace
+        uses: ./.github/actions/stylus-trace-diff
+        with:
+          tx_hash: ${{ steps.deploy.outputs.tx_hash }}
+          baseline: artifacts/capture/profile.json
+          threshold_percent: 5.0
+
+      - name: Update Baseline
+        if: github.ref == 'refs/heads/main'
+        uses: actions/cache/save@v4
+        with:
+          path: artifacts/capture/profile.json
+          key: stylus-profile-baseline-main
+          
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: stylus-trace-results
+          path: artifacts/

@@ -1,0 +1,37 @@
+name: 'Stylus Trace Diff'
+description: 'Profile Arbitrum Stylus transactions and detect gas regressions'
+inputs:
+  tx_hash:
+    description: 'Transaction hash to profile'
+    required: true
+  rpc_url:
+    description: 'RPC endpoint URL'
+    required: false
+    default: 'http://localhost:8547'
+  baseline:
+    description: 'Path to baseline profile'
+    required: false
+  threshold_percent:
+    description: 'Threshold percentage for regression gating'
+    required: false
+  ink:
+    description: 'Use Stylus Ink units'
+    required: false
+    default: 'false'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install stylus-trace
+      shell: bash
+      run: cargo install --path bin/stylus-trace
+
+    - name: Capture Profile
+      shell: bash
+      run: |
+        FLAGS="--tx ${{ inputs.tx_hash }} --rpc ${{ inputs.rpc_url }} --summary --flamegraph"
+        if [ "${{ inputs.ink }}" == "true" ]; then FLAGS="$FLAGS --ink"; fi
+        if [ -n "${{ inputs.baseline }}" ]; then FLAGS="$FLAGS --baseline ${{ inputs.baseline }}"; fi
+        if [ -n "${{ inputs.threshold_percent }}" ]; then FLAGS="$FLAGS --threshold-percent ${{ inputs.threshold_percent }}"; fi
+        
+        stylus-trace capture $FLAGS

@@ -32,13 +32,17 @@ Stylus Trace is organized as a Cargo Workspace for modularity and performance:
 ## 📦 Installation
 
 ### Via Cargo (Recommended)
+
 You can install the CLI directly from crates.io:
+
 ```bash
 cargo install stylus-trace-studio
 ```
 
 ### Build from Source (Host Native)
+
 If you prefer to build from the latest source code on your machine:
+
 ```bash
 # Clone the repository
 git clone https://github.com/CreativesOnchain/Stylus-Trace.git
@@ -53,7 +57,9 @@ cargo install --path bin/stylus-trace
 ## 🛠 Quick Start
 
 ### 1. Prerequisites
+
 Ensure you have the following installed:
+
 - **Docker** (for Nitro dev node)
 - **Rust** (1.72+)
 - **Foundry** (`cast`)
@@ -67,6 +73,7 @@ cd nitro-devnode && ./run-dev-node.sh
 ```
 
 ### 3. Build & Profile your Contract
+
 In your **contract's** directory:
 
 ```bash
@@ -96,6 +103,7 @@ stylus-trace capture \
 ```
 
 **What happens?**
+
 - `artifacts/profile.json`: A detailed data structure of your transaction.
 - `artifacts/flamegraph.svg`: An interactive SVG you can open in any browser.
 - **Terminal Output**: A high-level summary of the hottest paths.
@@ -113,6 +121,7 @@ This feature will be enabled automatically once upstream tracer support is avail
 ## 📖 CLI Command Reference
 
 ### `capture`
+
 | Flag | Description | Default |
 |------|-------------|---------|
 | `--tx` | **(Required)** Transaction hash to profile | - |
@@ -128,6 +137,7 @@ This feature will be enabled automatically once upstream tracer support is avail
 | `--hostio-threshold` | Specific percentage tolerance for total HostIO calls only | - |
 
 ### `diff`
+
 | Flag | Description | Default |
 |------|-------------|---------|
 | `<BASELINE>` | **(Required)** Path to baseline profile JSON | - |
@@ -142,9 +152,18 @@ This feature will be enabled automatically once upstream tracer support is avail
 
 ---
 
+## 🤖 Continuous Integration
+
+Stylus Trace is built for automation. Use our dedicated GitHub Action to gate performance regressions in your PRs.
+
+- **[CI Action Guide](file:///Users/mac/development/Stylus-Trace/.github/actions/stylus-trace-diff/README.md)**: Detailed instructions on setting up automated profiling.
+- **Example Workflow**: See [profile-diff.yml](file:///Users/mac/development/Stylus-Trace/.github/workflows/profile-diff.yml) for a complete Nitro dev node CI setup.
+
+---
+
 ## 🤝 Contributing
 
-We welcome contributions! 
+We welcome contributions!
 
 ```bash
 # Run tests across workspace
