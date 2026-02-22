@@ -17,7 +17,8 @@ jobs:
 
       - name: Start Nitro Dev Node
         run: |
-          docker run --rm -d --name nitro-node -p 8547:8547 offchainlabs/nitro-node:latest --dev --http.addr 0.0.0.0
+          git clone https://github.com/OffchainLabs/nitro-devnode.git
+          cd nitro-devnode && ./run-dev-node.sh --detach &
           # Wait for node to be ready
           until curl -s http://localhost:8547; do sleep 5; done
 

@@ -8,7 +8,3 @@ limits = { storage_load = 5, emit_log = 2 }
 
 [hot_paths]
 warn_individual_increase_percent = 20.0
-
-
-
-
