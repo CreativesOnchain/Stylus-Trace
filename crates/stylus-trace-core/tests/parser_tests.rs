@@ -1,7 +1,5 @@
 use serde_json::json;
-use stylus_trace_core::parser::hostio::{
-    parse_hostio_event, HostIoEvent, HostIoStats, HostIoType,
-};
+use stylus_trace_core::parser::hostio::{parse_hostio_event, HostIoEvent, HostIoStats, HostIoType};
 use stylus_trace_core::parser::stylus_trace::{extract_total_gas, parse_gas_value, parse_trace};
 
 #[test]
