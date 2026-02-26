@@ -100,6 +100,12 @@ pub enum Commands {
         file: PathBuf,
     },
 
+    /// CI configuration and management
+    Ci {
+        #[command(subcommand)]
+        subcommand: CiSubcommands,
+    },
+
     /// Display schema information
     Schema {
         /// Show full schema details
@@ -158,10 +164,55 @@ fn main() -> Result<()> {
         Commands::Validate { file } => {
             validate_profile_file(file).context("Failed to validate profile")?
         }
+        Commands::Ci { subcommand } => handle_ci(subcommand)?,
         Commands::Schema { show } => display_schema(show),
         Commands::Version => display_version(),
     }
 
+    Ok(())
+}
+
+#[derive(Subcommand, Debug)]
+pub enum CiSubcommands {
+    /// Initialize CI/CD performance regression checks
+    Init {
+        /// Transaction hash to profile in CI
+        #[arg(short, long)]
+        tx: String,
+
+        /// RPC endpoint URL
+        #[arg(short, long, default_value = "http://localhost:8547")]
+        rpc: Option<String>,
+
+        /// Percentage threshold for regressions (e.g., 1.0)
+        #[arg(short = 'p', long, default_value = "1.0")]
+        threshold: f64,
+
+        /// Force overwrite existing workflow files
+        #[arg(long)]
+        force: bool,
+    },
+}
+
+/// Handle CI command logic
+fn handle_ci(subcommand: CiSubcommands) -> Result<()> {
+    match subcommand {
+        CiSubcommands::Init {
+            tx,
+            rpc,
+            threshold,
+            force,
+        } => {
+            let args = stylus_trace_studio::commands::models::CiInitArgs {
+                transaction_hash: tx,
+                rpc_url: rpc,
+                threshold,
+                force,
+            };
+            stylus_trace_studio::commands::execute_ci_init(args)
+                .context("CI initialization failed")?;
+        }
+    }
     Ok(())
 }
 

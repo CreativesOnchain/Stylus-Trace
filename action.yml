@@ -1,0 +1,60 @@
+name: 'Stylus Performance Regression Check'
+description: 'Automated performance regression detection for Arbitrum Stylus transactions'
+author: 'Creatives Onchain'
+
+inputs:
+  rpc_url:
+    description: 'Arbitrum Nitro RPC endpoint'
+    required: false
+    default: 'http://localhost:8547'
+  tx_hash:
+    description: 'Transaction hash to profile'
+    required: true
+  baseline:
+    description: 'Path to baseline profile JSON'
+    required: false
+    default: 'artifacts/capture/baseline.json'
+  threshold:
+    description: 'Percentage threshold for allowed increase (e.g. 1.0 for 1%)'
+    required: false
+    default: '1.0'
+  ink:
+    description: 'Use Stylus Ink units instead of Gas'
+    required: false
+    default: 'false'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Stylus Trace
+      shell: bash
+      run: |
+        if ! command -v stylus-trace &> /dev/null; then
+          echo "Installing stylus-trace-studio..."
+          cargo install stylus-trace-studio
+        else
+          echo "stylus-trace already installed."
+        fi
+
+    - name: Capture Current Profile
+      shell: bash
+      run: |
+        INK_FLAG=""
+        if [ "${{ inputs.ink }}" = "true" ]; then
+          INK_FLAG="--ink"
+        fi
+        
+        stylus-trace capture \
+          --rpc "${{ inputs.rpc_url }}" \
+          --tx "${{ inputs.tx_hash }}" \
+          --output current_profile.json \
+          $INK_FLAG
+
+    - name: Compare with Baseline
+      shell: bash
+      run: |
+        stylus-trace diff \
+          "${{ inputs.baseline }}" \
+          artifacts/capture/current_profile.json \
+          --threshold-percent "${{ inputs.threshold }}" \
+          --summary
