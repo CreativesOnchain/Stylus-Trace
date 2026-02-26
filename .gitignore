@@ -5,6 +5,7 @@ target
 .DS_Store
 *.svg
 *.json
+!tests/fixtures/*.json
 profiles/
 flamegraphs.svg
 profile.json
