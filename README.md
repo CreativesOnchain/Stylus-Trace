@@ -23,8 +23,8 @@ Stylus Trace turns opaque Stylus transaction traces into **interactive flamegrap
 
 Stylus Trace is organized as a Cargo Workspace for modularity and performance:
 
-- `bin/stylus-trace`: The CLI frontend. Optimized for usability and speed.
-- `crates/stylus-trace-studio`: The core library engine published on [crates.io](https://crates.io/crates/stylus-trace-studio).
+- `bin/stylus-trace-studio`: The CLI frontend. Optimized for usability and speed.
+- `crates/stylus-trace-core`: The core library engine published on [crates.io](https://crates.io/crates/stylus-trace-core).
 - `artifacts/`: Standardized output directory for profiles and flamegraphs (Git ignored).
 
 ---
