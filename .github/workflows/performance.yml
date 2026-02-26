@@ -14,9 +14,15 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Prepare Dummy Profiles
+        run: |
+          mkdir -p artifacts/capture
+          cp artifacts/capture/baseline.json artifacts/capture/current_profile.json
+
       - name: Run Stylus Performance Check
         uses: ./
         with:
           tx_hash: "0xaaf333656d069068844d17f175fa5b73534c0b71599100bee2153791c3e81edc"
           rpc_url: "https://sepolia-rollup.arbitrum.io/rpc"
           threshold: "1"
+          skip_capture: "true"

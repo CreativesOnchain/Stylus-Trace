@@ -22,6 +22,10 @@ inputs:
     description: 'Use Stylus Ink units instead of Gas'
     required: false
     default: 'false'
+  skip_capture:
+    description: 'Skip the capture step (useful for testing with pre-existing profiles)'
+    required: false
+    default: 'false'
 
 runs:
   using: "composite"
@@ -43,6 +47,16 @@ runs:
     - name: Capture Current Profile
       shell: bash
       run: |
+        if [ "${{ inputs.skip_capture }}" = "true" ]; then
+          echo "Skipping capture as requested. Ensuring profile exists..."
+          mkdir -p artifacts/capture
+          if [ ! -f "artifacts/capture/current_profile.json" ]; then
+            echo "Error: current_profile.json not found but skip_capture is true"
+            exit 1
+          fi
+          exit 0
+        fi
+
         INK_FLAG=""
         if [ "${{ inputs.ink }}" = "true" ]; then
           INK_FLAG="--ink"
