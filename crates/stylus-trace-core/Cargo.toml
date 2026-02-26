@@ -1,13 +1,15 @@
 [package]
 name = "stylus-trace-core"
-version.workspace = true
-edition.workspace = true
-authors.workspace = true
-license.workspace = true
-description.workspace = true
-repository.workspace = true
-homepage.workspace = true
-documentation = "https://docs.rs/stylus-trace-studio"
+version = { workspace = true }
+edition = { workspace = true }
+authors = { workspace = true }
+license = { workspace = true }
+description = { workspace = true }
+repository = { workspace = true }
+homepage = { workspace = true }
+documentation = "https://docs.rs/stylus-trace-core"
+keywords = { workspace = true }
+categories = { workspace = true }
 
 readme = "README.md"
 
