@@ -50,7 +50,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run Stylus Performance Check
-        uses: CreativesOnchain/Stylus-Trace@v1
+        uses: CreativesOnchain/Stylus-Trace@main
         with:
           tx_hash: "{}"
 {}          threshold: "{}"

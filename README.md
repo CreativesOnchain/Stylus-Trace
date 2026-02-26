@@ -165,7 +165,7 @@ You can use the [Stylus Trace Action](https://github.com/CreativesOnchain/Stylus
 
 ```yaml
 - name: Gas Regression Check
-  uses: CreativesOnchain/Stylus-Trace@v1
+  uses: CreativesOnchain/Stylus-Trace@main
   with:
     tx_hash: "0x..."
     threshold: "1.0" # Fail if gas increases by > 1%
