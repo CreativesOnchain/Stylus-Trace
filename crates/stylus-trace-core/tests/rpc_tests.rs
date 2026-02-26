@@ -1,4 +1,4 @@
-use stylus_trace_studio::rpc::client::normalize_tx_hash;
+use stylus_trace_core::rpc::client::normalize_tx_hash;
 
 #[test]
 fn test_normalize_tx_hash() {

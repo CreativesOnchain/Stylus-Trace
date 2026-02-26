@@ -1,8 +1,8 @@
-use stylus_trace_studio::aggregator::metrics::{
+use stylus_trace_core::aggregator::metrics::{
     calculate_gas_distribution, calculate_hot_paths, create_hot_path,
 };
-use stylus_trace_studio::aggregator::stack_builder::{map_hostio_to_label, CollapsedStack};
-use stylus_trace_studio::parser::HostIoType;
+use stylus_trace_core::aggregator::stack_builder::{map_hostio_to_label, CollapsedStack};
+use stylus_trace_core::parser::HostIoType;
 
 #[test]
 fn test_map_hostio_to_label() {

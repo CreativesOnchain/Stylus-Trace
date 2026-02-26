@@ -8,11 +8,11 @@ use clap::{Args, Parser, Subcommand};
 use env_logger::Env;
 use std::path::PathBuf;
 
-use stylus_trace_studio::commands::{
+use stylus_trace_core::commands::{
     display_schema, display_version, execute_capture, validate_args, validate_profile_file,
     CaptureArgs,
 };
-use stylus_trace_studio::flamegraph::FlamegraphConfig;
+use stylus_trace_core::flamegraph::FlamegraphConfig;
 
 /// Stylus Trace Studio - Performance profiling for Arbitrum Stylus
 #[derive(Parser, Debug)]
@@ -100,6 +100,12 @@ pub enum Commands {
         file: PathBuf,
     },
 
+    /// CI configuration and management
+    Ci {
+        #[command(subcommand)]
+        subcommand: CiSubcommands,
+    },
+
     /// Display schema information
     Schema {
         /// Show full schema details
@@ -158,10 +164,55 @@ fn main() -> Result<()> {
         Commands::Validate { file } => {
             validate_profile_file(file).context("Failed to validate profile")?
         }
+        Commands::Ci { subcommand } => handle_ci(subcommand)?,
         Commands::Schema { show } => display_schema(show),
         Commands::Version => display_version(),
     }
 
+    Ok(())
+}
+
+#[derive(Subcommand, Debug)]
+pub enum CiSubcommands {
+    /// Initialize CI/CD performance regression checks
+    Init {
+        /// Transaction hash to profile in CI
+        #[arg(short, long)]
+        tx: String,
+
+        /// RPC endpoint URL
+        #[arg(short, long, default_value = "http://localhost:8547")]
+        rpc: Option<String>,
+
+        /// Percentage threshold for regressions (e.g., 1.0)
+        #[arg(short = 'p', long, default_value = "1.0")]
+        threshold: f64,
+
+        /// Force overwrite existing workflow files
+        #[arg(long)]
+        force: bool,
+    },
+}
+
+/// Handle CI command logic
+fn handle_ci(subcommand: CiSubcommands) -> Result<()> {
+    match subcommand {
+        CiSubcommands::Init {
+            tx,
+            rpc,
+            threshold,
+            force,
+        } => {
+            let args = stylus_trace_core::commands::models::CiInitArgs {
+                transaction_hash: tx,
+                rpc_url: rpc,
+                threshold,
+                force,
+            };
+            stylus_trace_core::commands::execute_ci_init(args)
+                .context("CI initialization failed")?;
+        }
+    }
     Ok(())
 }
 
@@ -235,7 +286,7 @@ fn handle_capture(command: Commands) -> Result<()> {
 
 /// Handle the diff command logic
 fn handle_diff(args: &DiffSubArgs) -> Result<()> {
-    let studio_args = stylus_trace_studio::commands::models::DiffArgs {
+    let studio_args = stylus_trace_core::commands::models::DiffArgs {
         baseline: resolve_artifact_path(args.baseline.clone(), "capture"),
         target: resolve_artifact_path(args.target.clone(), "capture"),
         threshold_file: args.threshold.clone(),
@@ -253,7 +304,7 @@ fn handle_diff(args: &DiffSubArgs) -> Result<()> {
         hostio_threshold: args.hostio_threshold,
     };
 
-    stylus_trace_studio::commands::diff::execute_diff(studio_args)
+    stylus_trace_core::commands::diff::execute_diff(studio_args)
         .context("Diff execution failed")?;
     Ok(())
 }

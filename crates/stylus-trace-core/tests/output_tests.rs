@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::path::Path;
-use stylus_trace_studio::output::validate_path;
-use stylus_trace_studio::output::{read_profile, write_profile, write_svg};
-use stylus_trace_studio::parser::schema::{HostIoSummary, HotPath, Profile};
+use stylus_trace_core::output::validate_path;
+use stylus_trace_core::output::{read_profile, write_profile, write_svg};
+use stylus_trace_core::parser::schema::{HostIoSummary, HotPath, Profile};
 use tempfile::NamedTempFile;
 
 fn create_test_profile() -> Profile {

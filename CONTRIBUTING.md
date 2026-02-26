@@ -51,7 +51,7 @@ Before you begin, ensure you have:
 # Fork the repository on GitHub
 # Clone your fork
 git clone https://github.com/Timi16/stylus-trace.git
-cd stylus-trace-studio
+cd Stylus-Trace
 
 # Add upstream remote
 git remote add upstream https://github.com/Timi16/stylus-trace.git

@@ -5,8 +5,8 @@
 //!
 //! # Example
 //! ```ignore
-//! use stylus_trace_studio::diff::{generate_diff, load_thresholds};
-//! use stylus_trace_studio::output::json::read_profile;
+//! use stylus_trace_core::diff::{generate_diff, load_thresholds};
+//! use stylus_trace_core::output::json::read_profile;
 //!
 //! let baseline = read_profile("baseline.json")?;
 //! let target = read_profile("target.json")?;

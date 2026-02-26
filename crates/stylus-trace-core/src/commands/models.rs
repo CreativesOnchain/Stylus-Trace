@@ -142,3 +142,30 @@ impl Default for DiffArgs {
         }
     }
 }
+
+/// Arguments for the CI init command
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CiInitArgs {
+    /// Transaction hash to use for performance checks
+    pub transaction_hash: String,
+
+    /// RPC endpoint URL (optional)
+    pub rpc_url: Option<String>,
+
+    /// Default percentage threshold for regressions
+    pub threshold: f64,
+
+    /// Force overwrite existing files
+    pub force: bool,
+}
+
+impl Default for CiInitArgs {
+    fn default() -> Self {
+        Self {
+            transaction_hash: String::new(),
+            rpc_url: Some("http://localhost:8547".to_string()),
+            threshold: 1.0,
+            force: false,
+        }
+    }
+}

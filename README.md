@@ -140,6 +140,37 @@ This feature will be enabled automatically once upstream tracer support is avail
 | `--output` | Path to write the diff report JSON | `artifacts/diff/diff_report.json` |
 | `--flamegraph` | Path to write visual diff flamegraph SVG | `artifacts/diff/diff.svg` |
 
+### `ci init`
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--tx` | **(Required)** Transaction hash to profile in CI | - |
+| `--rpc` | RPC endpoint URL | `http://localhost:8547` |
+| `--threshold` | Percentage threshold for regressions | `1.0` |
+| `--force` | Overwrite existing workflow files | `false` |
+
+---
+
+## 🤖 CI/CD Integration
+
+Stylus Trace is built for automated performance tracking. You can integrate it into your project to **strictly block merges** that cause gas regressions.
+
+### Quick Setup (Zero Config)
+Run this in your repository to auto-generate a GitHub Actions workflow:
+```bash
+stylus-trace ci init --tx 0x...
+```
+
+### Manual Integration
+You can use the [Stylus Trace Action](https://github.com/CreativesOnchain/Stylus-Trace) directly in your workflows:
+
+```yaml
+- name: Gas Regression Check
+  uses: CreativesOnchain/Stylus-Trace@main
+  with:
+    tx_hash: "0x..."
+    threshold: "1.0" # Fail if gas increases by > 1%
+```
+
 ---
 
 ## 🤝 Contributing
