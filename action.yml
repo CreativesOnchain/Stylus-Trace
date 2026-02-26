@@ -26,12 +26,16 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install Stylus Trace
+    - name: Setup Tool
       shell: bash
       run: |
-        if ! command -v stylus-trace &> /dev/null; then
-          echo "Installing stylus-trace-studio..."
-          cargo install stylus-trace-studio
+        if [ -f "Cargo.toml" ] && grep -q "name = \"stylus-trace\"" Cargo.toml; then
+          echo "Local Stylus-Trace detected. Building from source..."
+          cargo build --release --bin stylus-trace
+          echo "$(pwd)/target/release" >> $GITHUB_PATH
+        elif ! command -v stylus-trace &> /dev/null; then
+          echo "Installing stylus-trace..."
+          cargo install stylus-trace
         else
           echo "stylus-trace already installed."
         fi

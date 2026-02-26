@@ -34,7 +34,7 @@ Stylus Trace is organized as a Cargo Workspace for modularity and performance:
 ### Via Cargo (Recommended)
 You can install the CLI directly from crates.io:
 ```bash
-cargo install stylus-trace-studio
+cargo install stylus-trace
 ```
 
 ### Build from Source (Host Native)
