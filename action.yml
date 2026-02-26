@@ -31,7 +31,7 @@ runs:
       run: |
         if [ -f "bin/stylus-trace-studio/Cargo.toml" ]; then
           echo "Local Stylus-Trace detected. Building from source..."
-          cargo build --release --bin stylus-trace-studio
+          cargo build --release --bin stylus-trace
           echo "$(pwd)/target/release" >> $GITHUB_PATH
         elif ! command -v stylus-trace &> /dev/null; then
           echo "Installing stylus-trace-studio..."
