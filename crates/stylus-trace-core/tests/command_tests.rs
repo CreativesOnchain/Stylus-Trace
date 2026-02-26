@@ -1,4 +1,4 @@
-use stylus_trace_studio::commands::{validate_args, CaptureArgs};
+use stylus_trace_core::commands::{validate_args, CaptureArgs};
 
 #[test]
 fn test_validate_args_valid() {

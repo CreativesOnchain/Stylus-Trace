@@ -29,13 +29,13 @@ runs:
     - name: Setup Tool
       shell: bash
       run: |
-        if [ -f "Cargo.toml" ] && grep -q "name = \"stylus-trace\"" Cargo.toml; then
+        if [ -f "bin/stylus-trace-studio/Cargo.toml" ]; then
           echo "Local Stylus-Trace detected. Building from source..."
-          cargo build --release --bin stylus-trace
+          cargo build --release --bin stylus-trace-studio
           echo "$(pwd)/target/release" >> $GITHUB_PATH
         elif ! command -v stylus-trace &> /dev/null; then
-          echo "Installing stylus-trace..."
-          cargo install stylus-trace
+          echo "Installing stylus-trace-studio..."
+          cargo install stylus-trace-studio
         else
           echo "stylus-trace already installed."
         fi

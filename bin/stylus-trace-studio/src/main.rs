@@ -8,11 +8,11 @@ use clap::{Args, Parser, Subcommand};
 use env_logger::Env;
 use std::path::PathBuf;
 
-use stylus_trace_studio::commands::{
+use stylus_trace_core::commands::{
     display_schema, display_version, execute_capture, validate_args, validate_profile_file,
     CaptureArgs,
 };
-use stylus_trace_studio::flamegraph::FlamegraphConfig;
+use stylus_trace_core::flamegraph::FlamegraphConfig;
 
 /// Stylus Trace Studio - Performance profiling for Arbitrum Stylus
 #[derive(Parser, Debug)]
@@ -203,13 +203,13 @@ fn handle_ci(subcommand: CiSubcommands) -> Result<()> {
             threshold,
             force,
         } => {
-            let args = stylus_trace_studio::commands::models::CiInitArgs {
+            let args = stylus_trace_core::commands::models::CiInitArgs {
                 transaction_hash: tx,
                 rpc_url: rpc,
                 threshold,
                 force,
             };
-            stylus_trace_studio::commands::execute_ci_init(args)
+            stylus_trace_core::commands::execute_ci_init(args)
                 .context("CI initialization failed")?;
         }
     }
@@ -286,7 +286,7 @@ fn handle_capture(command: Commands) -> Result<()> {
 
 /// Handle the diff command logic
 fn handle_diff(args: &DiffSubArgs) -> Result<()> {
-    let studio_args = stylus_trace_studio::commands::models::DiffArgs {
+    let studio_args = stylus_trace_core::commands::models::DiffArgs {
         baseline: resolve_artifact_path(args.baseline.clone(), "capture"),
         target: resolve_artifact_path(args.target.clone(), "capture"),
         threshold_file: args.threshold.clone(),
@@ -304,7 +304,7 @@ fn handle_diff(args: &DiffSubArgs) -> Result<()> {
         hostio_threshold: args.hostio_threshold,
     };
 
-    stylus_trace_studio::commands::diff::execute_diff(studio_args)
+    stylus_trace_core::commands::diff::execute_diff(studio_args)
         .context("Diff execution failed")?;
     Ok(())
 }

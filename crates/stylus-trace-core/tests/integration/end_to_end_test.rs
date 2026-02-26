@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
-use stylus_trace_studio::*;
+use stylus_trace_core::*;
 use tempfile::TempDir;
 
 #[test]

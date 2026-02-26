@@ -3,8 +3,8 @@
 //! Includes all integration and unit tests for the diffing functionality.
 
 use std::collections::HashMap;
-use stylus_trace_studio::diff::*;
-use stylus_trace_studio::parser::schema::{HostIoSummary, HotPath, Profile};
+use stylus_trace_core::diff::*;
+use stylus_trace_core::parser::schema::{HostIoSummary, HotPath, Profile};
 
 // ============================================================================
 // SHARED TEST HELPERS
