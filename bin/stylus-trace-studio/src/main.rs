@@ -184,9 +184,17 @@ pub enum CiSubcommands {
         #[arg(short, long)]
         rpc: Option<String>,
 
-        /// Percentage threshold for regressions (e.g., 1.0)
+        /// Global percentage threshold for all metrics (e.g., 1.0)
         #[arg(short = 'p', long, default_value = "1.0")]
         threshold: f64,
+
+        /// Specific gas increase threshold percentage
+        #[arg(long = "gas-threshold")]
+        gas_threshold: Option<f64>,
+
+        /// Specific HostIO calls increase threshold percentage
+        #[arg(long = "hostio-threshold")]
+        hostio_threshold: Option<f64>,
 
         /// Force overwrite existing workflow files
         #[arg(long)]
@@ -201,12 +209,16 @@ fn handle_ci(subcommand: CiSubcommands) -> Result<()> {
             tx,
             rpc,
             threshold,
+            gas_threshold,
+            hostio_threshold,
             force,
         } => {
             let args = stylus_trace_core::commands::models::CiInitArgs {
                 transaction_hash: tx,
                 rpc_url: rpc,
                 threshold,
+                gas_threshold,
+                hostio_threshold,
                 force,
             };
             stylus_trace_core::commands::execute_ci_init(args)

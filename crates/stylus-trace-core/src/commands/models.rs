@@ -155,6 +155,12 @@ pub struct CiInitArgs {
     /// Default percentage threshold for regressions
     pub threshold: f64,
 
+    /// Specific gas increase threshold percentage (optional)
+    pub gas_threshold: Option<f64>,
+
+    /// Specific HostIO calls increase threshold percentage (optional)
+    pub hostio_threshold: Option<f64>,
+
     /// Force overwrite existing files
     pub force: bool,
 }
@@ -165,6 +171,8 @@ impl Default for CiInitArgs {
             transaction_hash: None,
             rpc_url: Some("http://localhost:8547".to_string()),
             threshold: 1.0,
+            gas_threshold: None,
+            hostio_threshold: None,
             force: false,
         }
     }

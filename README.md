@@ -145,7 +145,9 @@ This feature will be enabled automatically once upstream tracer support is avail
 |------|-------------|---------|
 | `--tx` | Transaction hash to profile in CI (optional) | - |
 | `--rpc` | RPC endpoint URL | `http://localhost:8547` |
-| `--threshold` | Percentage threshold for regressions | `1.0` |
+| `--threshold` | Global percentage threshold for all metrics | `1.0` |
+| `--gas-threshold` | Specific percentage threshold for Gas regressions | - |
+| `--hostio-threshold` | Specific percentage threshold for HostIO regressions | - |
 | `--force` | Overwrite existing workflow files | `false` |
 
 ---
@@ -169,7 +171,8 @@ You can use the [Stylus Trace Action](https://github.com/CreativesOnchain/Stylus
   uses: CreativesOnchain/Stylus-Trace@main
   with:
     tx_hash: "0x..."
-    threshold: "1.0" # Fail if gas increases by > 1%
+    gas_threshold: "1.0" # Fail if gas increases by > 1%
+    threshold: "10.0"     # Higher global limit for other metrics
 ```
 
 ---
