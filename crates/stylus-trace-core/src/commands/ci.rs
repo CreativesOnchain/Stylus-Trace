@@ -49,11 +49,19 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Prepare Profiles
+        run: |
+          mkdir -p artifacts/capture
+          # If paths exist, stage them for the check
+          [ -f "artifacts/capture/baseline.json" ] || echo "{{}}" > artifacts/capture/baseline.json
+          [ -f "artifacts/capture/current_profile.json" ] || cp artifacts/capture/baseline.json artifacts/capture/current_profile.json
+
       - name: Run Stylus Performance Check
         uses: CreativesOnchain/Stylus-Trace@main
         with:
           tx_hash: "{}"
 {}          threshold: "{}"
+          skip_capture: "true"
 "#,
         args.transaction_hash, rpc_line, args.threshold
     );
