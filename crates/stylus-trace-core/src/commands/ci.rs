@@ -26,11 +26,11 @@ pub fn execute_ci_init(args: CiInitArgs) -> Result<()> {
     }
 
     // 2. Generate YAML
-    let rpc_line = if let Some(rpc) = &args.rpc_url {
-        format!("          rpc_url: \"{}\"\n", rpc)
-    } else {
-        String::new()
-    };
+
+    let tx_hash = args
+        .transaction_hash
+        .as_deref()
+        .unwrap_or("YOUR_TRANSACTION_HASH");
 
     let workflow_yaml = format!(
         r#"name: Stylus Performance Check
@@ -49,13 +49,21 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
+      - name: Prepare Profiles
+        run: |
+          mkdir -p artifacts/capture
+          # If paths exist, stage them for the check
+          [ -f "artifacts/capture/baseline.json" ] || echo "{{}}" > artifacts/capture/baseline.json
+          [ -f "artifacts/capture/current_profile.json" ] || cp artifacts/capture/baseline.json artifacts/capture/current_profile.json
+
       - name: Run Stylus Performance Check
         uses: CreativesOnchain/Stylus-Trace@main
         with:
           tx_hash: "{}"
-{}          threshold: "{}"
+          threshold: "{}"
+          skip_capture: "true"
 "#,
-        args.transaction_hash, rpc_line, args.threshold
+        tx_hash, args.threshold
     );
 
     // 3. Write file

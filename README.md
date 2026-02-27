@@ -115,7 +115,7 @@ This feature will be enabled automatically once upstream tracer support is avail
 ### `capture`
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--tx` | **(Required)** Transaction hash to profile | - |
+| `--tx` | Transaction hash to profile | - |
 | `--rpc` | RPC endpoint URL | `http://localhost:8547` |
 | `--flamegraph` | Generate an SVG flamegraph | `artifacts/capture/flamegraph.svg` |
 | `--output` | Save JSON profile to path | `artifacts/capture/profile.json` |
@@ -143,7 +143,7 @@ This feature will be enabled automatically once upstream tracer support is avail
 ### `ci init`
 | Flag | Description | Default |
 |------|-------------|---------|
-| `--tx` | **(Required)** Transaction hash to profile in CI | - |
+| `--tx` | Transaction hash to profile in CI (optional) | - |
 | `--rpc` | RPC endpoint URL | `http://localhost:8547` |
 | `--threshold` | Percentage threshold for regressions | `1.0` |
 | `--force` | Overwrite existing workflow files | `false` |
@@ -157,8 +157,9 @@ Stylus Trace is built for automated performance tracking. You can integrate it i
 ### Quick Setup (Zero Config)
 Run this in your repository to auto-generate a GitHub Actions workflow:
 ```bash
-stylus-trace ci init --tx 0x...
+stylus-trace ci init
 ```
+*Note: You can optionally provide `--tx 0x...` now or fill it in the generated YAML later.*
 
 ### Manual Integration
 You can use the [Stylus Trace Action](https://github.com/CreativesOnchain/Stylus-Trace) directly in your workflows:

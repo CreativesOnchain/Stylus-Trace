@@ -9,7 +9,7 @@ inputs:
     default: 'http://localhost:8547'
   tx_hash:
     description: 'Transaction hash to profile'
-    required: true
+    required: false
   baseline:
     description: 'Path to baseline profile JSON'
     required: false
