@@ -26,11 +26,27 @@ pub fn execute_ci_init(args: CiInitArgs) -> Result<()> {
     }
 
     // 2. Generate YAML
-
     let tx_hash = args
         .transaction_hash
         .as_deref()
         .unwrap_or("YOUR_TRANSACTION_HASH");
+
+    let mut with_block = format!(
+        r#"          tx_hash: "{}"
+          threshold: "{}"
+"#,
+        tx_hash, args.threshold
+    );
+
+    if let Some(gas) = args.gas_threshold {
+        with_block.push_str(&format!("          gas_threshold: \"{}\"\n", gas));
+    }
+
+    if let Some(hostio) = args.hostio_threshold {
+        with_block.push_str(&format!("          hostio_threshold: \"{}\"\n", hostio));
+    }
+
+    with_block.push_str("          skip_capture: \"true\"");
 
     let workflow_yaml = format!(
         r#"name: Stylus Performance Check
@@ -59,11 +75,9 @@ jobs:
       - name: Run Stylus Performance Check
         uses: CreativesOnchain/Stylus-Trace@main
         with:
-          tx_hash: "{}"
-          threshold: "{}"
-          skip_capture: "true"
+{}
 "#,
-        tx_hash, args.threshold
+        with_block
     );
 
     // 3. Write file

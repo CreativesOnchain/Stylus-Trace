@@ -15,9 +15,15 @@ inputs:
     required: false
     default: 'artifacts/capture/baseline.json'
   threshold:
-    description: 'Percentage threshold for allowed increase (e.g. 1.0 for 1%)'
+    description: 'Global percentage threshold for all metrics (e.g. 1.0 for 1%)'
     required: false
     default: '1.0'
+  gas_threshold:
+    description: 'Specific percentage threshold for Gas regressions'
+    required: false
+  hostio_threshold:
+    description: 'Specific percentage threshold for HostIO regressions'
+    required: false
   ink:
     description: 'Use Stylus Ink units instead of Gas'
     required: false
@@ -71,8 +77,20 @@ runs:
     - name: Compare with Baseline
       shell: bash
       run: |
+        GAS_FLAG=""
+        if [ -n "${{ inputs.gas_threshold }}" ]; then
+          GAS_FLAG="--gas-threshold ${{ inputs.gas_threshold }}"
+        fi
+
+        HOSTIO_FLAG=""
+        if [ -n "${{ inputs.hostio_threshold }}" ]; then
+          HOSTIO_FLAG="--hostio-threshold ${{ inputs.hostio_threshold }}"
+        fi
+
         stylus-trace diff \
           "${{ inputs.baseline }}" \
           artifacts/capture/current_profile.json \
           --threshold-percent "${{ inputs.threshold }}" \
+          $GAS_FLAG \
+          $HOSTIO_FLAG \
           --summary
