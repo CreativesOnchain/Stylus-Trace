@@ -146,8 +146,8 @@ impl Default for DiffArgs {
 /// Arguments for the CI init command
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CiInitArgs {
-    /// Transaction hash to use for performance checks
-    pub transaction_hash: String,
+    /// Transaction hash to use for performance checks (optional)
+    pub transaction_hash: Option<String>,
 
     /// RPC endpoint URL (optional)
     pub rpc_url: Option<String>,
@@ -162,7 +162,7 @@ pub struct CiInitArgs {
 impl Default for CiInitArgs {
     fn default() -> Self {
         Self {
-            transaction_hash: String::new(),
+            transaction_hash: None,
             rpc_url: Some("http://localhost:8547".to_string()),
             threshold: 1.0,
             force: false,

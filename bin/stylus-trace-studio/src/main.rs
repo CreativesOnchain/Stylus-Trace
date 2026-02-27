@@ -176,12 +176,12 @@ fn main() -> Result<()> {
 pub enum CiSubcommands {
     /// Initialize CI/CD performance regression checks
     Init {
-        /// Transaction hash to profile in CI
+        /// Transaction hash to profile in CI (optional)
         #[arg(short, long)]
-        tx: String,
+        tx: Option<String>,
 
-        /// RPC endpoint URL
-        #[arg(short, long, default_value = "http://localhost:8547")]
+        /// RPC endpoint URL (optional)
+        #[arg(short, long)]
         rpc: Option<String>,
 
         /// Percentage threshold for regressions (e.g., 1.0)
