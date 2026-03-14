@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stylus Trace Studio - Transaction Profile</title>
+    <link rel="stylesheet" href="viewer.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body class="dark-mode">
+    <div id="app">
+        <header class="glass-header">
+            <div class="logo">
+                <span class="icon">🔥</span>
+                <h1>Stylus-Trace <span class="badge">Studio</span></h1>
+            </div>
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="Search symbols or HostIOs... (⌘K)">
+            </div>
+            <div class="controls">
+                <button id="zoom-in" title="Zoom In">+</button>
+                <button id="zoom-out" title="Zoom Out">−</button>
+                <button id="reset-view" title="Reset View">⟲</button>
+                <div class="divider"></div>
+                <button id="toggle-diff" class="hidden">Side-by-Side Diff</button>
+            </div>
+        </header>
+
+        <main>
+            <aside id="sidebar">
+                <section class="tx-info">
+                    <h2>Transaction</h2>
+                    <div class="tx-hash" title="Click to copy">0x...</div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <label>Total Gas</label>
+                            <span class="value" id="total-gas">-</span>
+                        </div>
+                        <div class="stat-card">
+                            <label>HostIOs</label>
+                            <span class="value" id="total-hostios">-</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="hot-paths">
+                    <h2>Hot Paths</h2>
+                    <ul id="hot-paths-list">
+                        <!-- Populated by JS -->
+                    </ul>
+                </section>
+            </aside>
+
+            <div id="viewer-container">
+                <div id="flamegraph-a" class="flamegraph-canvas">
+                    <canvas id="canvas-a"></canvas>
+                    <div class="label">Baseline / Transaction</div>
+                </div>
+                <div id="flamegraph-b" class="flamegraph-canvas hidden">
+                    <canvas id="canvas-b"></canvas>
+                    <div class="label">Target</div>
+                </div>
+                <div id="tooltip"></div>
+            </div>
+        </main>
+
+        <footer class="glass-footer">
+            <div id="status-line">Loaded profile: <span id="profile-name">none</span></div>
+            <div class="breadcrumb" id="breadcrumb">root</div>
+        </footer>
+    </div>
+
+    <!-- Data Injection Point -->
+    <script id="profile-data" type="application/json">
+        /* PROFILE_DATA_JSON */
+    </script>
+    <script id="profile-b-data" type="application/json">
+        /* PROFILE_B_DATA_JSON */
+    </script>
+    <script id="diff-data" type="application/json">
+        /* DIFF_DATA_JSON */
+    </script>
+
+    <script src="viewer.js"></script>
+</body>
+</html>

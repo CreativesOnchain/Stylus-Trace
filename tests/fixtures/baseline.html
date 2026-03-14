@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stylus Trace Studio - Transaction Profile</title>
+    <style>:root {
+    --bg-color: #0d1117;
+    --sidebar-bg: rgba(22, 27, 34, 0.8);
+    --header-bg: rgba(13, 17, 23, 0.7);
+    --text-color: #e6edf3;
+    --text-muted: #848d97;
+    --accent-color: #58a6ff;
+    --border-color: #30363d;
+    --card-bg: #161b22;
+    --glass-blur: blur(12px);
+    
+    --crimson: #dc143c;
+    --orange: #ff8c00;
+    --violet: #8a2be2;
+    --forest: #228b22;
+    --steel: #4682b4;
+    --cornflower: #6495ed;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    overflow: hidden;
+    height: 100vh;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+/* Header Styling */
+.glass-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 64px;
+    background: var(--header-bg);
+    backdrop-filter: var(--glass-blur);
+    border-bottom: 1px solid var(--border-color);
+    z-index: 100;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo h1 {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.badge {
+    font-size: 10px;
+    background: var(--accent-color);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    vertical-align: middle;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.search-bar {
+    flex: 0 1 400px;
+}
+
+.search-bar input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 16px;
+    color: white;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.search-bar input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+}
+
+.controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.controls button {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    color: white;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.controls button:hover {
+    background: var(--border-color);
+}
+
+.divider {
+    width: 1px;
+    height: 24px;
+    background: var(--border-color);
+    margin: 0 8px;
+}
+
+/* Main Layout */
+main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+#sidebar {
+    width: 320px;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
+    backdrop-filter: var(--glass-blur);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    overflow-y: auto;
+}
+
+#sidebar h2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+}
+
+.tx-hash {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: var(--card-bg);
+    padding: 8px;
+    border-radius: 6px;
+    color: var(--accent-color);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 16px;
+    cursor: pointer;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.stat-card {
+    background: var(--card-bg);
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+}
+
+.stat-card label {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.stat-card .value {
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+#hot-paths-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hot-path-item {
+    background: var(--card-bg);
+    padding: 10px;
+    border-radius: 8px;
+    border-left: 3px solid var(--accent-color);
+    cursor: pointer;
+    transition: transform 0.1s;
+}
+
+.hot-path-item:hover {
+    transform: translateX(4px);
+    background: #1c2128;
+}
+
+.hot-path-item .percentage {
+    font-weight: 700;
+    font-size: 12px;
+    color: var(--accent-color);
+}
+
+.hot-path-item .stack-name {
+    font-size: 13px;
+    margin-top: 4px;
+    display: block;
+    word-break: break-all;
+}
+
+/* Viewer Area */
+#viewer-container {
+    flex: 1;
+    position: relative;
+    background: #010409;
+    overflow: hidden;
+    display: flex;
+}
+
+.flamegraph-canvas {
+    flex: 1;
+    position: relative;
+    height: 100%;
+}
+
+canvas {
+    width: 100%;
+    height: 100%;
+}
+
+.flamegraph-canvas .label {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.5);
+    padding: 4px 12px;
+    border-radius: 100px;
+    font-size: 11px;
+    color: var(--text-muted);
+    pointer-events: none;
+}
+
+#tooltip {
+    position: absolute;
+    background: rgba(22, 27, 34, 0.95);
+    border: 1px solid var(--border-color);
+    padding: 12px;
+    border-radius: 8px;
+    pointer-events: none;
+    font-size: 12px;
+    transform: translate(10px, 10px);
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+
+/* Footer Control */
+.glass-footer {
+    height: 32px;
+    background: var(--header-bg);
+    backdrop-filter: var(--glass-blur);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    font-size: 11px;
+    color: var(--text-muted);
+    justify-content: space-between;
+}
+
+.breadcrumb {
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.hidden { display: none !important; }
+</style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body class="dark-mode">
+    <div id="app">
+        <header class="glass-header">
+            <div class="logo">
+                <span class="icon">🔥</span>
+                <h1>Stylus-Trace <span class="badge">Studio</span></h1>
+            </div>
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="Search symbols or HostIOs... (⌘K)">
+            </div>
+            <div class="controls">
+                <button id="zoom-in" title="Zoom In">+</button>
+                <button id="zoom-out" title="Zoom Out">−</button>
+                <button id="reset-view" title="Reset View">⟲</button>
+                <div class="divider"></div>
+                <button id="toggle-diff" class="hidden">Side-by-Side Diff</button>
+            </div>
+        </header>
+
+        <main>
+            <aside id="sidebar">
+                <section class="tx-info">
+                    <h2>Transaction</h2>
+                    <div class="tx-hash" title="Click to copy">0x...</div>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <label>Total Gas</label>
+                            <span class="value" id="total-gas">-</span>
+                        </div>
+                        <div class="stat-card">
+                            <label>HostIOs</label>
+                            <span class="value" id="total-hostios">-</span>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="hot-paths">
+                    <h2>Hot Paths</h2>
+                    <ul id="hot-paths-list">
+                        <!-- Populated by JS -->
+                    </ul>
+                </section>
+            </aside>
+
+            <div id="viewer-container">
+                <div id="flamegraph-a" class="flamegraph-canvas">
+                    <canvas id="canvas-a"></canvas>
+                    <div class="label">Baseline / Transaction</div>
+                </div>
+                <div id="flamegraph-b" class="flamegraph-canvas hidden">
+                    <canvas id="canvas-b"></canvas>
+                    <div class="label">Target</div>
+                </div>
+                <div id="tooltip"></div>
+            </div>
+        </main>
+
+        <footer class="glass-footer">
+            <div id="status-line">Loaded profile: <span id="profile-name">none</span></div>
+            <div class="breadcrumb" id="breadcrumb">root</div>
+        </footer>
+    </div>
+
+    <!-- Data Injection Point -->
+    <script id="profile-data" type="application/json">
+        {"version":"1.0.0","transaction_hash":"0x47404c910245f1bf9759ca9a62a13358478e2ea72bcc896c8e0096ad6ef25e3b","total_gas":460111929,"hostio_summary":{"total_calls":15,"by_type":{"write_result":1,"storage_flush_cache":1,"storage_cache":2,"msg_value":1,"msg_reentrant":1,"read_args":1,"msg_sender":1,"storage_load":2,"emit_log":1,"native_keccak256":1,"other":3},"total_hostio_gas":460111929},"hot_paths":[{"stack":"storage_flush_cache","gas":400068073,"percentage":86.9501631634506,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"storage_load_bytes32","gas":42136960,"percentage":9.15798034004026,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"emit_log","gas":17649734,"percentage":3.835965313561779,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"native_keccak256","gas":121800,"percentage":0.026471819642824343,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"write_result","gas":41162,"percentage":0.008946084073382066,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"storage_cache_bytes32","gas":36960,"percentage":0.008032828029546697,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"read_args","gas":13560,"percentage":0.0029471089848661586,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_value","gas":13440,"percentage":0.0029210283743806176,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_sender","gas":13440,"percentage":0.0029210283743806176,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_reentrant","gas":8400,"percentage":0.0018256427339878856,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"pay_for_memory_grow","gas":8400,"percentage":0.0018256427339878856,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"user_returned","gas":0,"percentage":0.0,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"user_entrypoint","gas":0,"percentage":0.0,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}}],"all_stacks":[{"stack":"storage_flush_cache","weight":400068073,"last_pc":0},{"stack":"storage_load_bytes32","weight":42136960,"last_pc":0},{"stack":"emit_log","weight":17649734,"last_pc":0},{"stack":"native_keccak256","weight":121800,"last_pc":0},{"stack":"write_result","weight":41162,"last_pc":0},{"stack":"storage_cache_bytes32","weight":36960,"last_pc":0},{"stack":"read_args","weight":13560,"last_pc":0},{"stack":"msg_value","weight":13440,"last_pc":0},{"stack":"msg_sender","weight":13440,"last_pc":0},{"stack":"msg_reentrant","weight":8400,"last_pc":0},{"stack":"pay_for_memory_grow","weight":8400,"last_pc":0},{"stack":"user_returned","weight":0,"last_pc":0},{"stack":"user_entrypoint","weight":0,"last_pc":0}],"generated_at":"2026-02-19T00:39:29.748484086+00:00"}
+    </script>
+    <script id="profile-b-data" type="application/json">
+        /* PROFILE_B_DATA_JSON */
+    </script>
+    <script id="diff-data" type="application/json">
+        /* DIFF_DATA_JSON */
+    </script>
+
+    <script>/**
+ * Stylus-Trace Studio Viewer Logic
+ */
+
+const CONFIG = {
+    rowHeight: 24,
+    minBoxWidth: 0.5,
+    font: '12px "Inter", sans-serif',
+    colors: {
+        StorageExpensive: '#dc143c',
+        StorageNormal: '#ff8c00',
+        Crypto: '#8a2be2',
+        Memory: '#228b22',
+        Call: '#4682b4',
+        System: '#6495ed',
+        Root: '#4b0082',
+        UserCode: '#848d97',
+        Background: '#010409',
+        Border: '#30363d',
+        Text: '#e6edf3',
+        Regression: '#ff4d4d',
+        Improvement: '#2ecc71',
+        Stable: '#f0f0f0'
+    }
+};
+
+class Flamegraph {
+    constructor(canvasId, data, isDiff = false) {
+        this.canvas = document.getElementById(canvasId);
+        this.ctx = this.canvas.getContext('2d', { alpha: false });
+        this.data = data;
+        this.isDiff = isDiff;
+        this.zoom = 1.0;
+        this.offsetX = 0;
+        this.nodes = [];
+        this.hoveredNode = null;
+        
+        this.init();
+    }
+
+    init() {
+        this.buildTree();
+        this.setupListeners();
+        this.resize();
+        window.addEventListener('resize', () => this.resize());
+    }
+
+    buildTree() {
+        if (!this.data) return;
+        
+        // Handle both Profile and Diff reports
+        if (this.data.summary && this.data.metrics) { 
+            // This is a diff report
+            this.tree = this.convertDiffToTree(this.data);
+        } else if (this.data.all_stacks) {
+            // This is a standard profile
+            this.tree = this.convertStacksToTree(this.data.all_stacks, this.data.total_gas);
+        }
+    }
+
+    convertStacksToTree(stacks, totalGas) {
+        const root = { name: 'root', value: totalGas, children: {}, depth: 0 };
+        stacks.forEach(stack => {
+            let current = root;
+            const parts = stack.stack.split(';');
+            if (parts[0] === 'root') parts.shift();
+
+            parts.forEach((part, i) => {
+                if (!current.children[part]) {
+                    current.children[part] = { name: part, value: 0, children: {}, depth: i + 1 };
+                }
+                current = current.children[part];
+                if (i === parts.length - 1) {
+                    current.value += stack.weight;
+                }
+            });
+        });
+        this.calculateCumulative(root);
+        return root;
+    }
+
+    convertDiffToTree(diffReport) {
+        // Implement complex diff tree reconstruction if needed
+        // For now, if we have Profile B data, we render two separate graphs
+        return null; 
+    }
+
+    calculateCumulative(node) {
+        let childWeight = Object.values(node.children).reduce((acc, child) => acc + this.calculateCumulative(child), 0);
+        node.value = Math.max(node.value, childWeight);
+        return node.value;
+    }
+
+    resize() {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = this.canvas.parentElement.getBoundingClientRect();
+        this.canvas.width = rect.width * dpr;
+        this.canvas.height = rect.height * dpr;
+        this.ctx.scale(dpr, dpr);
+        this.render();
+    }
+
+    setupListeners() {
+        this.canvas.addEventListener('mousemove', (e) => {
+            const rect = this.canvas.getBoundingClientRect();
+            const x = (e.clientX - rect.left) / this.zoom - this.offsetX;
+            const y = e.clientY - rect.top;
+            this.handleMouseMove(x, y, e.clientX, e.clientY);
+        });
+
+        this.canvas.addEventListener('mousedown', (e) => {
+            this.isDragging = true;
+            this.lastX = e.clientX;
+        });
+
+        window.addEventListener('mouseup', () => this.isDragging = false);
+
+        window.addEventListener('mousemove', (e) => {
+            if (this.isDragging) {
+                const dx = (e.clientX - this.lastX) / this.zoom;
+                this.offsetX += dx;
+                this.lastX = e.clientX;
+                this.render();
+                if (window.app.syncZoom) {
+                    const other = this === window.app.flamegraphA ? window.app.flamegraphB : window.app.flamegraphA;
+                    if (other) {
+                        other.offsetX = this.offsetX;
+                        other.render();
+                    }
+                }
+            }
+        });
+
+        this.canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const rect = this.canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            
+            const oldZoom = this.zoom;
+            this.zoom *= e.deltaY > 0 ? 0.9 : 1.1;
+            this.zoom = Math.max(0.1, Math.min(this.zoom, 100));
+
+            // Zoom towards mouse
+            this.offsetX -= (mouseX / oldZoom - mouseX / this.zoom);
+            
+            this.render();
+            if (window.app.syncZoom) {
+                const other = this === window.app.flamegraphA ? window.app.flamegraphB : window.app.flamegraphA;
+                if (other) {
+                    other.zoom = this.zoom;
+                    other.offsetX = this.offsetX;
+                    other.render();
+                }
+            }
+        }, { passive: false });
+    }
+
+    handleMouseMove(x, y, screenX, screenY) {
+        const hit = this.nodes.find(node => 
+            x >= node.x && x <= node.x + node.w &&
+            y >= node.y && y <= node.y + node.h
+        );
+
+        if (hit !== this.hoveredNode) {
+            this.hoveredNode = hit;
+            this.updateTooltip(screenX, screenY);
+            this.render();
+        }
+    }
+
+    updateTooltip(x, y) {
+        const tooltip = document.getElementById('tooltip');
+        if (this.hoveredNode) {
+            tooltip.style.display = 'block';
+            tooltip.style.left = (x + 15) + 'px';
+            tooltip.style.top = (y + 15) + 'px';
+            
+            let colorDot = `<span style="display:inline-block;width:10px;height:10px;background:${CONFIG.colors[this.getCategory(this.hoveredNode.name)]};margin-right:8px;border-radius:2px"></span>`;
+            
+            tooltip.innerHTML = `
+                <div style="font-weight:600;margin-bottom:4px;border-bottom:1px solid #333;padding-bottom:4px">${colorDot}${this.hoveredNode.name}</div>
+                <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;font-family:'JetBrains Mono'">
+                    <span>Gas:</span> <span style="text-align:right">${this.hoveredNode.value.toLocaleString()}</span>
+                    <span>Pct:</span> <span style="text-align:right">${((this.hoveredNode.value / this.tree.value) * 100).toFixed(2)}%</span>
+                </div>
+            `;
+        } else {
+            tooltip.style.display = 'none';
+        }
+    }
+
+    render() {
+        const width = this.canvas.width / (window.devicePixelRatio || 1);
+        const height = this.canvas.height / (window.devicePixelRatio || 1);
+
+        this.ctx.fillStyle = CONFIG.colors.Background;
+        this.ctx.fillRect(0, 0, width, height);
+        this.nodes = [];
+
+        if (!this.tree) return;
+
+        const self = this;
+        function renderNode(node, x, depth, w) {
+            const screenX = (x + self.offsetX) * self.zoom;
+            const screenW = w * self.zoom;
+
+            if (screenX + screenW < 0 || screenX > width) return; // Frustum culling
+            if (screenW < CONFIG.minBoxWidth) return;
+
+            const y = height - (depth + 1) * CONFIG.rowHeight - 40;
+            const h = CONFIG.rowHeight;
+
+            const category = self.getCategory(node.name);
+            const color = CONFIG.colors[category] || CONFIG.colors.UserCode;
+
+            self.ctx.fillStyle = color;
+            self.ctx.fillRect(screenX, y, screenW, h);
+            self.ctx.strokeStyle = CONFIG.colors.Background;
+            self.ctx.lineWidth = 0.5;
+            self.ctx.strokeRect(screenX, y, screenW, h);
+
+            if (self.hoveredNode && self.hoveredNode.name === node.name) {
+                self.ctx.strokeStyle = '#fff';
+                self.ctx.lineWidth = 2;
+                self.ctx.strokeRect(screenX, y, screenW, h);
+            }
+
+            if (screenW > 40) {
+                self.ctx.fillStyle = '#fff';
+                self.ctx.font = CONFIG.font;
+                self.ctx.textAlign = 'left';
+                const label = self.truncateText(node.name, screenW - 8);
+                if (label) self.ctx.fillText(label, screenX + 4, y + h / 2 + 4);
+            }
+
+            self.nodes.push({ name: node.name, x, y, w, h, value: node.value });
+
+            let currentX = x;
+            Object.values(node.children)
+                .sort((a, b) => b.value - a.value)
+                .forEach(child => {
+                    const childW = (child.value / node.value) * w;
+                    renderNode(child, currentX, depth + 1, childW);
+                    currentX += childW;
+                });
+        }
+
+        renderNode(this.tree, 0, 0, width / this.zoom);
+    }
+
+    getCategory(name) {
+        if (name === 'root') return 'Root';
+        if (name.includes('storage_store') || name.includes('storage_flush')) return 'StorageExpensive';
+        if (name.includes('storage_load') || name.includes('storage_cache')) return 'StorageNormal';
+        if (name.includes('keccak')) return 'Crypto';
+        if (name.includes('memory') || name.includes('args') || name.includes('result')) return 'Memory';
+        if (name.includes('call') || name.includes('create')) return 'Call';
+        if (name.includes('host') || name.includes('msg') || name.includes('block')) return 'System';
+        return 'UserCode';
+    }
+
+    truncateText(text, maxWidth) {
+        let width = this.ctx.measureText(text).width;
+        if (width <= maxWidth) return text;
+        let truncated = text;
+        while (truncated.length > 0 && width > maxWidth) {
+            truncated = truncated.slice(0, -1);
+            width = this.ctx.measureText(truncated + '...').width;
+        }
+        return truncated ? truncated + '...' : '';
+    }
+}
+
+// Global App State
+window.app = {
+    profileA: null,
+    profileB: null,
+    diff: null,
+    flamegraphA: null,
+    flamegraphB: null,
+    syncZoom: true
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadData();
+    setupControls();
+    
+    if (window.app.profileA) {
+        updateUI(window.app.profileA);
+        window.app.flamegraphA = new Flamegraph('canvas-a', window.app.profileA);
+    }
+    
+    if (window.app.profileB) {
+        document.getElementById('flamegraph-b').classList.remove('hidden');
+        document.getElementById('toggle-diff').classList.remove('hidden');
+        window.app.flamegraphB = new Flamegraph('canvas-b', window.app.profileB);
+    }
+});
+
+function loadData() {
+    try {
+        const getJson = id => {
+            const el = document.getElementById(id);
+            if (!el) return null;
+            const text = el.textContent.trim();
+            return (text && !text.startsWith('/*')) ? JSON.parse(text) : null;
+        };
+
+        window.app.profileA = getJson('profile-data');
+        window.app.profileB = getJson('profile-b-data');
+        window.app.diff = getJson('diff-data');
+    } catch (e) {
+        console.error('Data loading error', e);
+    }
+}
+
+function setupControls() {
+    const zoomIn = () => {
+        window.app.flamegraphA.zoom *= 1.2;
+        window.app.flamegraphA.render();
+        if (window.app.flamegraphB) {
+            window.app.flamegraphB.zoom = window.app.flamegraphA.zoom;
+            window.app.flamegraphB.render();
+        }
+    };
+    
+    const zoomOut = () => {
+        window.app.flamegraphA.zoom *= 0.8;
+        window.app.flamegraphA.render();
+        if (window.app.flamegraphB) {
+            window.app.flamegraphB.zoom = window.app.flamegraphA.zoom;
+            window.app.flamegraphB.render();
+        }
+    };
+
+    const reset = () => {
+        window.app.flamegraphA.zoom = 1.0;
+        window.app.flamegraphA.offsetX = 0;
+        window.app.flamegraphA.render();
+        if (window.app.flamegraphB) {
+            window.app.flamegraphB.zoom = 1.0;
+            window.app.flamegraphB.offsetX = 0;
+            window.app.flamegraphB.render();
+        }
+    }
+
+    document.getElementById('zoom-in').onclick = zoomIn;
+    document.getElementById('zoom-out').onclick = zoomOut;
+    document.getElementById('reset-view').onclick = reset;
+    
+    document.getElementById('search-input').oninput = (e) => {
+        const query = e.target.value.toLowerCase();
+        // Implement search highlight in render
+        window.app.searchQuery = query;
+        window.app.flamegraphA.render();
+        if (window.app.flamegraphB) window.app.flamegraphB.render();
+    };
+
+    window.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            document.getElementById('search-input').focus();
+        }
+    });
+}
+
+function updateUI(profile) {
+    document.querySelector('.tx-hash').textContent = profile.transaction_hash;
+    document.getElementById('total-gas').textContent = profile.total_gas.toLocaleString();
+    document.getElementById('total-hostios').textContent = profile.hostio_summary.total_calls;
+    document.getElementById('profile-name').textContent = profile.transaction_hash.slice(0, 10) + '...';
+
+    const hotPathsList = document.getElementById('hot-paths-list');
+    profile.hot_paths.slice(0, 15).forEach(path => {
+        const li = document.createElement('li');
+        li.className = 'hot-path-item';
+        const name = path.stack.split(';').pop();
+        li.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center">
+                <span class="percentage">${path.percentage.toFixed(1)}%</span>
+                <span style="font-size:10px;color:#888">${(path.gas / 1000).toFixed(0)}k gas</span>
+            </div>
+            <span class="stack-name">${name}</span>
+        `;
+        li.onclick = () => {
+             // Logic to find and zoom to node
+        };
+        hotPathsList.appendChild(li);
+    });
+}
+</script>
+</body>
+</html>

@@ -142,7 +142,7 @@ pub fn execute_capture(args: CaptureArgs) -> Result<()> {
         &args,
         &parsed_trace,
         &stacks,
-        hot_paths,
+        hot_paths.clone(),
         mapper.as_ref(),
         svg_content,
     )?;
@@ -180,6 +180,15 @@ pub fn execute_capture(args: CaptureArgs) -> Result<()> {
 
     if args.print_summary {
         print_transaction_summary(&args, &parsed_trace, &stacks, mapper.as_ref());
+    }
+
+    if args.view {
+        info!("Generating interactive web viewer...");
+        let viewer_path = args.output_json.with_extension("html");
+        let profile = to_profile(&parsed_trace, hot_paths, Some(stacks.to_vec()), mapper.as_ref());
+        crate::output::viewer::generate_viewer(&profile, &viewer_path)?;
+        info!("✓ Viewer generated at: {}", viewer_path.display());
+        crate::output::viewer::open_browser(&viewer_path)?;
     }
 
     info!(

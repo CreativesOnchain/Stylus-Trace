@@ -48,6 +48,9 @@ pub struct CaptureArgs {
 
     /// Path to WASM binary (optional)
     pub wasm: Option<PathBuf>,
+
+    /// Open interactive web viewer
+    pub view: bool,
 }
 
 impl Default for CaptureArgs {
@@ -67,6 +70,7 @@ impl Default for CaptureArgs {
             threshold_percent: None,
             gas_threshold: None,
             hostio_threshold: None,
+            view: false,
         }
     }
 }
@@ -125,6 +129,9 @@ pub struct DiffArgs {
 
     /// Path to write the visual diff flamegraph SVG
     pub output_svg: Option<PathBuf>,
+
+    /// Open interactive web viewer
+    pub view: bool,
 }
 
 impl Default for DiffArgs {
@@ -139,6 +146,7 @@ impl Default for DiffArgs {
             summary: true,
             output: None,
             output_svg: None,
+            view: false,
         }
     }
 }
