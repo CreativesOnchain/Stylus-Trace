@@ -107,23 +107,33 @@ main { display: flex; flex: 1; overflow: hidden; }
     color: #fff;
 }
 
-.tx-hash {
+.tx-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+.tx-item {
+    font-size: 16px;
     background: var(--green-faint);
+    border-left: 3px solid var(--green-dark);
     padding: 8px;
     word-break: break-all;
-    cursor: pointer;
-    border: 1px solid var(--green-dark);
-    margin-bottom: 10px;
 }
+.tx-item label { color: #fff; opacity: 0.6; margin-right: 5px; }
+.tx-item.target { border-left-color: var(--green-main); }
 
-.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.stat-card {
-    border: 1px solid var(--green-dark);
-    padding: 10px;
-    background: var(--green-faint);
+.stats-column { display: flex; flex-direction: column; gap: 15px; }
+.stat-row {
+    border-bottom: 1px dashed var(--green-dark);
+    padding-bottom: 8px;
 }
-.stat-card label { display: block; font-size: 16px; color: var(--green-dark); }
-.stat-card .value { font-size: 24px; }
+.stat-row .label { font-size: 16px; color: #fff; opacity: 0.8; margin-bottom: 4px; }
+.stat-row .value { font-size: 20px; color: var(--green-main); }
+.stat-row .delta { margin-left: 10px; font-weight: bold; }
+.stat-row .delta.pos { color: #ff4d4d; }
+.stat-row .delta.neg { color: #00ff41; }
+.stat-row .delta.neutral { color: #888; }
 
 #hot-paths-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
 .hot-path-item {

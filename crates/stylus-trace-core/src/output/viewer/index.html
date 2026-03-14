@@ -14,7 +14,7 @@
     <div id="app">
         <header class="terminal-header">
             <div class="logo">
-                <span class="glitch" data-text="STYLUS_TRACE // TERMINAL">STYLUS_TRACE // TERMINAL</span>
+                <span class="glitch" data-text="STYLUS_TRACE // VIEWER">STYLUS_TRACE // VIEWER</span>
             </div>
             <div class="search-bar">
                 <input type="text" id="search-input" placeholder=">_ SEARCH SYMBOLS...">
@@ -30,16 +30,23 @@
         <main>
             <aside id="sidebar">
                 <section class="tx-info panel">
-                    <h2>:: TRANSACTION ::</h2>
-                    <div class="tx-hash" title="Click to copy">0x...</div>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <label>TOTAL_GAS</label>
-                            <span class="value" id="total-gas">-</span>
+                    <h2>:: DIAGNOSTICS ::</h2>
+                    <div id="tx-hashes" class="tx-list">
+                        <div class="tx-item baseline">
+                            <label>B_LINE:</label> <span class="hash" id="hash-a">0x...</span>
                         </div>
-                        <div class="stat-card">
-                            <label>HOST_IOS</label>
-                            <span class="value" id="total-hostios">-</span>
+                        <div class="tx-item target">
+                            <label>TARGET:</label> <span class="hash" id="hash-b">0x...</span>
+                        </div>
+                    </div>
+                    <div class="stats-column">
+                        <div class="stat-row">
+                            <div class="label">GAS_DELTA:</div>
+                            <div class="value" id="gas-delta">-</div>
+                        </div>
+                        <div class="stat-row">
+                            <div class="label">HOST_IO_DELTA:</div>
+                            <div class="value" id="hostio-delta">-</div>
                         </div>
                     </div>
                 </section>

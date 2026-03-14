@@ -113,23 +113,33 @@ main { display: flex; flex: 1; overflow: hidden; }
     color: #fff;
 }
 
-.tx-hash {
+.tx-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+.tx-item {
+    font-size: 16px;
     background: var(--green-faint);
+    border-left: 3px solid var(--green-dark);
     padding: 8px;
     word-break: break-all;
-    cursor: pointer;
-    border: 1px solid var(--green-dark);
-    margin-bottom: 10px;
 }
+.tx-item label { color: #fff; opacity: 0.6; margin-right: 5px; }
+.tx-item.target { border-left-color: var(--green-main); }
 
-.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.stat-card {
-    border: 1px solid var(--green-dark);
-    padding: 10px;
-    background: var(--green-faint);
+.stats-column { display: flex; flex-direction: column; gap: 15px; }
+.stat-row {
+    border-bottom: 1px dashed var(--green-dark);
+    padding-bottom: 8px;
 }
-.stat-card label { display: block; font-size: 16px; color: var(--green-dark); }
-.stat-card .value { font-size: 24px; }
+.stat-row .label { font-size: 16px; color: #fff; opacity: 0.8; margin-bottom: 4px; }
+.stat-row .value { font-size: 20px; color: var(--green-main); }
+.stat-row .delta { margin-left: 10px; font-weight: bold; }
+.stat-row .delta.pos { color: #ff4d4d; }
+.stat-row .delta.neg { color: #00ff41; }
+.stat-row .delta.neutral { color: #888; }
 
 #hot-paths-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
 .hot-path-item {
@@ -193,7 +203,7 @@ main { display: flex; flex: 1; overflow: hidden; }
     <div id="app">
         <header class="terminal-header">
             <div class="logo">
-                <span class="glitch" data-text="STYLUS_TRACE // TERMINAL">STYLUS_TRACE // TERMINAL</span>
+                <span class="glitch" data-text="STYLUS_TRACE // VIEWER">STYLUS_TRACE // VIEWER</span>
             </div>
             <div class="search-bar">
                 <input type="text" id="search-input" placeholder=">_ SEARCH SYMBOLS...">
@@ -209,16 +219,23 @@ main { display: flex; flex: 1; overflow: hidden; }
         <main>
             <aside id="sidebar">
                 <section class="tx-info panel">
-                    <h2>:: TRANSACTION ::</h2>
-                    <div class="tx-hash" title="Click to copy">0x...</div>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <label>TOTAL_GAS</label>
-                            <span class="value" id="total-gas">-</span>
+                    <h2>:: DIAGNOSTICS ::</h2>
+                    <div id="tx-hashes" class="tx-list">
+                        <div class="tx-item baseline">
+                            <label>B_LINE:</label> <span class="hash" id="hash-a">0x...</span>
                         </div>
-                        <div class="stat-card">
-                            <label>HOST_IOS</label>
-                            <span class="value" id="total-hostios">-</span>
+                        <div class="tx-item target">
+                            <label>TARGET:</label> <span class="hash" id="hash-b">0x...</span>
+                        </div>
+                    </div>
+                    <div class="stats-column">
+                        <div class="stat-row">
+                            <div class="label">GAS_DELTA:</div>
+                            <div class="value" id="gas-delta">-</div>
+                        </div>
+                        <div class="stat-row">
+                            <div class="label">HOST_IO_DELTA:</div>
+                            <div class="value" id="hostio-delta">-</div>
                         </div>
                     </div>
                 </section>
@@ -251,7 +268,7 @@ main { display: flex; flex: 1; overflow: hidden; }
 
     <!-- Data Injection Point -->
     <script id="profile-data" type="application/json">
-        {"version":"1.0.0","transaction_hash":"0x47404c910245f1bf9759ca9a62a13358478e2ea72bcc896c8e0096ad6ef25e3b","total_gas":460111929,"hostio_summary":{"total_calls":15,"by_type":{"storage_cache":2,"storage_load":2,"write_result":1,"read_args":1,"other":3,"storage_flush_cache":1,"emit_log":1,"msg_sender":1,"msg_value":1,"msg_reentrant":1,"native_keccak256":1},"total_hostio_gas":460111929},"hot_paths":[{"stack":"storage_flush_cache","gas":400068073,"percentage":86.9501631634506,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"storage_load_bytes32","gas":42136960,"percentage":9.15798034004026,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"emit_log","gas":17649734,"percentage":3.835965313561779,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"native_keccak256","gas":121800,"percentage":0.026471819642824343,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"write_result","gas":41162,"percentage":0.008946084073382066,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"storage_cache_bytes32","gas":36960,"percentage":0.008032828029546697,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"read_args","gas":13560,"percentage":0.0029471089848661586,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_value","gas":13440,"percentage":0.0029210283743806176,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_sender","gas":13440,"percentage":0.0029210283743806176,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_reentrant","gas":8400,"percentage":0.0018256427339878856,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"pay_for_memory_grow","gas":8400,"percentage":0.0018256427339878856,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"user_returned","gas":0,"percentage":0.0,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"user_entrypoint","gas":0,"percentage":0.0,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}}],"all_stacks":[{"stack":"storage_flush_cache","weight":400068073,"last_pc":0},{"stack":"storage_load_bytes32","weight":42136960,"last_pc":0},{"stack":"emit_log","weight":17649734,"last_pc":0},{"stack":"native_keccak256","weight":121800,"last_pc":0},{"stack":"write_result","weight":41162,"last_pc":0},{"stack":"storage_cache_bytes32","weight":36960,"last_pc":0},{"stack":"read_args","weight":13560,"last_pc":0},{"stack":"msg_value","weight":13440,"last_pc":0},{"stack":"msg_sender","weight":13440,"last_pc":0},{"stack":"msg_reentrant","weight":8400,"last_pc":0},{"stack":"pay_for_memory_grow","weight":8400,"last_pc":0},{"stack":"user_returned","weight":0,"last_pc":0},{"stack":"user_entrypoint","weight":0,"last_pc":0}],"generated_at":"2026-02-19T00:39:29.748484086+00:00"}
+        {"version":"1.0.0","transaction_hash":"0x47404c910245f1bf9759ca9a62a13358478e2ea72bcc896c8e0096ad6ef25e3b","total_gas":460111929,"hostio_summary":{"total_calls":15,"by_type":{"read_args":1,"storage_load":2,"msg_sender":1,"other":3,"msg_value":1,"storage_cache":2,"write_result":1,"native_keccak256":1,"msg_reentrant":1,"emit_log":1,"storage_flush_cache":1},"total_hostio_gas":460111929},"hot_paths":[{"stack":"storage_flush_cache","gas":400068073,"percentage":86.9501631634506,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"storage_load_bytes32","gas":42136960,"percentage":9.15798034004026,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"emit_log","gas":17649734,"percentage":3.835965313561779,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"native_keccak256","gas":121800,"percentage":0.026471819642824343,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"write_result","gas":41162,"percentage":0.008946084073382066,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"storage_cache_bytes32","gas":36960,"percentage":0.008032828029546697,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"read_args","gas":13560,"percentage":0.0029471089848661586,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_value","gas":13440,"percentage":0.0029210283743806176,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_sender","gas":13440,"percentage":0.0029210283743806176,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_reentrant","gas":8400,"percentage":0.0018256427339878856,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"pay_for_memory_grow","gas":8400,"percentage":0.0018256427339878856,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"user_returned","gas":0,"percentage":0.0,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"user_entrypoint","gas":0,"percentage":0.0,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}}],"all_stacks":[{"stack":"storage_flush_cache","weight":400068073,"last_pc":0},{"stack":"storage_load_bytes32","weight":42136960,"last_pc":0},{"stack":"emit_log","weight":17649734,"last_pc":0},{"stack":"native_keccak256","weight":121800,"last_pc":0},{"stack":"write_result","weight":41162,"last_pc":0},{"stack":"storage_cache_bytes32","weight":36960,"last_pc":0},{"stack":"read_args","weight":13560,"last_pc":0},{"stack":"msg_value","weight":13440,"last_pc":0},{"stack":"msg_sender","weight":13440,"last_pc":0},{"stack":"msg_reentrant","weight":8400,"last_pc":0},{"stack":"pay_for_memory_grow","weight":8400,"last_pc":0},{"stack":"user_returned","weight":0,"last_pc":0},{"stack":"user_entrypoint","weight":0,"last_pc":0}],"generated_at":"2026-02-19T00:39:29.748484086+00:00"}
     </script>
     <script id="profile-b-data" type="application/json">
         /* PROFILE_B_DATA_JSON */
@@ -263,6 +280,20 @@ main { display: flex; flex: 1; overflow: hidden; }
     <script>/**
  * Stylus-Trace Studio - Pie Chart Viewer Logic (Retro Tech Theme)
  */
+
+const CONFIG = {
+    colors: {
+        StorageExpensive: 'rgb(220, 20, 60)',
+        StorageNormal: 'rgb(255, 140, 0)',
+        Crypto: 'rgb(138, 43, 226)',
+        Memory: 'rgb(34, 139, 34)',
+        Call: 'rgb(70, 130, 180)',
+        System: 'rgb(100, 149, 237)',
+        Root: 'rgb(75, 0, 130)',
+        UserCode: 'rgb(169, 169, 169)',
+        Other: '#002209'
+    }
+};
 
 class PieChart {
     constructor(canvasId, data, isDiff = false) {
@@ -282,7 +313,6 @@ class PieChart {
     init() {
         this.processData();
         this.setupListeners();
-        // Delay initial resize to ensure CSS is loaded and dimensions are correct
         setTimeout(() => {
             this.resize();
             window.addEventListener('resize', () => this.resize());
@@ -296,20 +326,15 @@ class PieChart {
         let tracked = 0;
         this.slices = [];
         
-        // Retro green shades for the pie chart
-        const colors = [
-            '#00ff41', '#00e63a', '#00cc33', '#00b32d', 
-            '#009926', '#008020', '#006619', '#004d13'
-        ];
-        
-        this.data.hot_paths.slice(0, 15).forEach((path, i) => {
+        this.data.hot_paths.slice(0, 15).forEach(path => {
             let name = path.stack.split(';').pop();
+            const category = this.getCategory(name);
             this.slices.push({
                 name: name,
                 fullStack: path.stack,
                 value: path.gas,
                 percentage: path.percentage,
-                color: colors[i % colors.length]
+                color: CONFIG.colors[category] || CONFIG.colors.UserCode
             });
             tracked += path.gas;
         });
@@ -320,11 +345,10 @@ class PieChart {
                 fullStack: 'Other Operations',
                 value: total - tracked,
                 percentage: ((total - tracked) / total) * 100,
-                color: '#002209'
+                color: CONFIG.colors.Other
             });
         }
         
-        // Calculate angles
         let startAngle = 0;
         this.slices.forEach(slice => {
             let sliceAngle = (slice.value / total) * 2 * Math.PI;
@@ -346,7 +370,6 @@ class PieChart {
     setupListeners() {
         this.canvas.addEventListener('mousemove', (e) => {
             const rect = this.canvas.getBoundingClientRect();
-            // Mouse coordinates relative to canvas
             const mouseX = e.clientX - rect.left;
             const mouseY = e.clientY - rect.top;
             this.handleMouseMove(mouseX, mouseY, e.clientX, e.clientY);
@@ -383,12 +406,9 @@ class PieChart {
 
         this.canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
-            
             this.zoom *= e.deltaY > 0 ? 0.9 : 1.1;
             this.zoom = Math.max(0.1, Math.min(this.zoom, 10));
-
             this.render();
-            
             if (window.app.syncZoom) {
                 const other = this === window.app.chartA ? window.app.chartB : window.app.chartA;
                 if (other) {
@@ -401,18 +421,12 @@ class PieChart {
 
     handleMouseMove(x, y, screenX, screenY) {
         if (!this.slices) return;
-        
         const width = this.canvas.width / (window.devicePixelRatio || 1);
         const height = this.canvas.height / (window.devicePixelRatio || 1);
-        
-        // Transform mouse coordinates back to pie chart space
         const centerX = width / 2;
         const centerY = height / 2;
-        
-        // Account for translation and scaling
         const adjustedX = (x - centerX) / this.zoom - this.offsetX;
         const adjustedY = (y - centerY) / this.zoom - this.offsetY;
-        
         const distance = Math.sqrt(adjustedX * adjustedX + adjustedY * adjustedY);
         const radius = Math.min(width, height) / 2.5;
         
@@ -420,7 +434,6 @@ class PieChart {
         if (distance <= radius) {
             let angle = Math.atan2(adjustedY, adjustedX);
             if (angle < 0) angle += 2 * Math.PI;
-            
             hit = this.slices.find(slice => angle >= slice.startAngle && angle <= slice.endAngle);
         }
 
@@ -428,8 +441,6 @@ class PieChart {
             this.hoveredSlice = hit;
             this.updateTooltip(screenX, screenY);
             this.render();
-            
-            // Highlight list item if available
             document.querySelectorAll('.hot-path-item').forEach(el => el.classList.remove('highlight'));
             if (hit && hit.name !== 'Other') {
                 const el = document.getElementById(`path-${hit.name}`);
@@ -444,7 +455,6 @@ class PieChart {
             tooltip.style.display = 'block';
             tooltip.style.left = (x + 20) + 'px';
             tooltip.style.top = (y + 20) + 'px';
-            
             tooltip.innerHTML = `
                 <div style="font-size: 24px; color: #fff; text-shadow: none;">>${this.hoveredSlice.name}</div>
                 <div style="margin-top: 10px;">
@@ -460,8 +470,6 @@ class PieChart {
     render() {
         const width = this.canvas.width / (window.devicePixelRatio || 1);
         const height = this.canvas.height / (window.devicePixelRatio || 1);
-
-        // Clear with transparency, background handled by CSS
         this.ctx.clearRect(0, 0, width, height);
 
         if (!this.slices) return;
@@ -480,31 +488,21 @@ class PieChart {
             this.ctx.closePath();
             
             this.ctx.fillStyle = slice.color;
+            let isHighlighted = (this.hoveredSlice === slice) || 
+                               (this.searchQuery && slice.name.toLowerCase().includes(this.searchQuery) && slice.name !== 'Other');
             
-            let isHighlighted = false;
-            if (this.hoveredSlice === slice) {
-                isHighlighted = true;
-            }
-            if (this.searchQuery && slice.name.toLowerCase().includes(this.searchQuery) && slice.name !== 'Other') {
-                isHighlighted = true;
-            }
-            
-            if (isHighlighted) {
-                this.ctx.fillStyle = '#ffffff'; 
-            }
+            if (isHighlighted) this.ctx.fillStyle = '#ffffff'; 
             
             this.ctx.fill();
             this.ctx.strokeStyle = '#000000';
             this.ctx.lineWidth = 2 / this.zoom;
             this.ctx.stroke();
             
-            // Render label if slice is large enough
             let midAngle = slice.startAngle + (slice.endAngle - slice.startAngle) / 2;
             if (slice.percentage > 3 && this.zoom > 0.5) {
                 let textX = Math.cos(midAngle) * (radius * 0.7);
                 let textY = Math.sin(midAngle) * (radius * 0.7);
-                
-                this.ctx.fillStyle = isHighlighted ? '#000' : '#000';
+                this.ctx.fillStyle = '#000';
                 this.ctx.font = `${Math.max(12, 16 / this.zoom)}px 'VT323'`;
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
@@ -514,12 +512,10 @@ class PieChart {
         
         this.ctx.restore();
         
-        // Draw center HUD element
         this.ctx.beginPath();
         this.ctx.arc(width/2, height/2, 5, 0, Math.PI * 2);
         this.ctx.fillStyle = '#00ff41';
         this.ctx.fill();
-        
         this.ctx.beginPath();
         this.ctx.moveTo(width/2 - 20, height/2);
         this.ctx.lineTo(width/2 + 20, height/2);
@@ -529,9 +525,20 @@ class PieChart {
         this.ctx.lineWidth = 1;
         this.ctx.stroke();
     }
+
+    getCategory(name) {
+        const n = name.toLowerCase();
+        if (n === 'root') return 'Root';
+        if (n.includes('storage_store') || n.includes('storage_flush')) return 'StorageExpensive';
+        if (n.includes('storage_load') || n.includes('storage_cache')) return 'StorageNormal';
+        if (n.includes('keccak')) return 'Crypto';
+        if (n.includes('memory') || n.includes('args') || n.includes('result')) return 'Memory';
+        if (n.includes('call') || n.includes('create')) return 'Call';
+        if (n.includes('host') || n.includes('msg') || n.includes('block')) return 'System';
+        return 'UserCode';
+    }
 }
 
-// Global App State
 window.app = {
     profileA: null,
     profileB: null,
@@ -545,12 +552,10 @@ window.app = {
 document.addEventListener('DOMContentLoaded', () => {
     loadData();
     setupControls();
-    
     if (window.app.profileA) {
-        updateUI(window.app.profileA);
+        updateUI();
         window.app.chartA = new PieChart('canvas-a', window.app.profileA);
     }
-    
     if (window.app.profileB) {
         document.getElementById('chart-b').classList.remove('hidden');
         document.getElementById('toggle-diff').classList.remove('hidden');
@@ -566,7 +571,6 @@ function loadData() {
             const text = el.textContent.trim();
             return (text && !text.startsWith('/*')) ? JSON.parse(text) : null;
         };
-
         window.app.profileA = getJson('profile-data');
         window.app.profileB = getJson('profile-b-data');
         window.app.diff = getJson('diff-data');
@@ -586,7 +590,6 @@ function setupControls() {
             window.app.chartB.render();
         }
     };
-    
     const zoomOut = () => {
         if (window.app.chartA) {
             window.app.chartA.zoom *= 0.8;
@@ -597,7 +600,6 @@ function setupControls() {
             window.app.chartB.render();
         }
     };
-
     const reset = () => {
         if (window.app.chartA) {
             window.app.chartA.zoom = 1.0;
@@ -612,20 +614,16 @@ function setupControls() {
             window.app.chartB.render();
         }
     }
-
     document.getElementById('zoom-in').onclick = zoomIn;
     document.getElementById('zoom-out').onclick = zoomOut;
     document.getElementById('reset-view').onclick = reset;
-    
     document.getElementById('search-input').oninput = (e) => {
         window.app.searchQuery = e.target.value.toLowerCase();
         if (window.app.chartA) window.app.chartA.searchQuery = window.app.searchQuery;
         if (window.app.chartB) window.app.chartB.searchQuery = window.app.searchQuery;
-        
         if (window.app.chartA) window.app.chartA.render();
         if (window.app.chartB) window.app.chartB.render();
     };
-
     window.addEventListener('keydown', (e) => {
         if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
             e.preventDefault();
@@ -634,38 +632,103 @@ function setupControls() {
     });
 }
 
-function updateUI(profile) {
-    document.querySelector('.tx-hash').textContent = profile.transaction_hash;
-    document.getElementById('total-gas').textContent = profile.total_gas.toLocaleString();
-    document.getElementById('total-hostios').textContent = (profile.hostio_summary?.total_calls || 0).toLocaleString();
-    document.getElementById('profile-name').textContent = profile.transaction_hash.slice(0, 10) + '...';
+function updateUI() {
+    const profA = window.app.profileA;
+    const profB = window.app.profileB;
+    const diff = window.app.diff;
 
+    // Hashes
+    document.getElementById('hash-a').textContent = profA.transaction_hash;
+    if (profB) {
+        document.getElementById('hash-b').textContent = profB.transaction_hash;
+    } else {
+        document.querySelector('.tx-item.target').classList.add('hidden');
+    }
+
+    // Delta Stats Helper
+    const formatDelta = (v1, v2) => {
+        const diff = v2 - v1;
+        const pct = v1 === 0 ? (v2 > 0 ? 100 : 0) : (diff / v1) * 100;
+        const sign = diff > 0 ? '+' : '';
+        const cls = diff > 0 ? 'pos' : (diff < 0 ? 'neg' : 'neutral');
+        return `${v1} -> ${v2} <span class="delta ${cls}">(${sign}${pct.toFixed(2)}%)</span>`;
+    };
+
+    // Gas Delta
+    const gasA = profA.total_gas;
+    const gasB = profB ? profB.total_gas : gasA;
+    if (profB) {
+        document.getElementById('gas-delta').innerHTML = formatDelta(gasA, gasB);
+    } else {
+        document.getElementById('gas-delta').textContent = gasA.toLocaleString();
+    }
+
+    // HostIO Delta
+    const ioA = profA.hostio_summary?.total_calls || 0;
+    const ioB = profB ? (profB.hostio_summary?.total_calls || 0) : ioA;
+    if (profB) {
+        document.getElementById('hostio-delta').innerHTML = `📈 ${formatDelta(ioA, ioB)}`;
+    } else {
+        document.getElementById('hostio-delta').textContent = ioA.toLocaleString();
+    }
+
+    // Footer
+    const profileName = profB ? 
+        `${profA.transaction_hash.slice(0, 8)} vs ${profB.transaction_hash.slice(0, 8)}` : 
+        profA.transaction_hash.slice(0, 10) + '...';
+    document.getElementById('profile-name').textContent = profileName;
+
+    // Hot Paths
     const hotPathsList = document.getElementById('hot-paths-list');
     hotPathsList.innerHTML = '';
-    if (profile.hot_paths) {
-        profile.hot_paths.slice(0, 10).forEach(path => {
+    
+    // If it's a diff, we use metrics from the diff report if possible, or just calculate deltas
+    const pathsToShow = profB ? profB.hot_paths : profA.hot_paths;
+    
+    if (pathsToShow) {
+        pathsToShow.slice(0, 10).forEach(path => {
             const li = document.createElement('li');
             li.className = 'hot-path-item';
             const name = path.stack.split(';').pop();
             li.id = `path-${name}`;
+            
+            let deltaDisplay = '';
+            if (profB) {
+                // Find matching path in A
+                const pathA = profA.hot_paths.find(p => p.stack === path.stack);
+                const gasA = pathA ? pathA.gas : 0;
+                const gasDiff = path.gas - gasA;
+                const gasPct = gasA === 0 ? (path.gas > 0 ? 100 : 0) : (gasDiff / gasA) * 100;
+                const sign = gasDiff > 0 ? '+' : '';
+                const cls = gasDiff > 0 ? 'pos' : (gasDiff < 0 ? 'neg' : 'neutral');
+                deltaDisplay = `<span class="delta ${cls}">${sign}${gasPct.toFixed(2)}%</span>`;
+            } else {
+                deltaDisplay = `<span>[${path.percentage.toFixed(1)}%]</span>`;
+            }
+
             li.innerHTML = `
                 <div style="display:flex;justify-content:space-between;">
-                    <span style="color: #fff;">[${path.percentage.toFixed(1)}%]</span>
-                    <span>${(path.gas / 1000).toFixed(0)}k gas</span>
+                    ${deltaDisplay}
+                    <span style="opacity: 0.6;">${(path.gas / 1000).toFixed(0)}k gas</span>
                 </div>
                 <span class="stack-name">> ${name}</span>
             `;
+            
             li.onmouseenter = () => {
                 if (window.app.chartA) {
                     window.app.chartA.hoveredSlice = window.app.chartA.slices.find(s => s.name === name);
                     window.app.chartA.render();
                 }
+                if (window.app.chartB) {
+                    window.app.chartB.hoveredSlice = window.app.chartB.slices.find(s => s.name === name);
+                    window.app.chartB.render();
+                }
             };
             li.onmouseleave = () => {
-                if (window.app.chartA) {
-                    window.app.chartA.hoveredSlice = null;
-                    window.app.chartA.render();
-                }
+                if (window.app.chartA) window.app.chartA.hoveredSlice = null;
+                if (window.app.chartB) window.app.chartB.hoveredSlice = null;
+                if (window.app.chartA) window.app.chartA.render();
+                if (window.app.chartB) window.app.chartB.render();
             };
             hotPathsList.appendChild(li);
         });
