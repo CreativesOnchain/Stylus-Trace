@@ -27,7 +27,7 @@ class PieChart {
         this.offsetY = 0;
         this.hoveredSlice = null;
         this.searchQuery = '';
-        
+
         this.init();
     }
 
@@ -42,11 +42,11 @@ class PieChart {
 
     processData() {
         if (!this.data || !this.data.hot_paths) return;
-        
+
         let total = this.data.total_gas;
         let tracked = 0;
         this.slices = [];
-        
+
         this.data.hot_paths.slice(0, 15).forEach(path => {
             let name = path.stack.split(';').pop();
             const category = this.getCategory(name);
@@ -59,7 +59,7 @@ class PieChart {
             });
             tracked += path.gas;
         });
-        
+
         if (total > tracked) {
             this.slices.push({
                 name: 'Other',
@@ -69,7 +69,7 @@ class PieChart {
                 color: CONFIG.colors.Other
             });
         }
-        
+
         let startAngle = 0;
         this.slices.forEach(slice => {
             let sliceAngle = (slice.value / total) * 2 * Math.PI;
@@ -113,7 +113,7 @@ class PieChart {
                 this.lastX = e.clientX;
                 this.lastY = e.clientY;
                 this.render();
-                
+
                 if (window.app.syncZoom) {
                     const other = this === window.app.chartA ? window.app.chartB : window.app.chartA;
                     if (other) {
@@ -150,7 +150,7 @@ class PieChart {
         const adjustedY = (y - centerY) / this.zoom - this.offsetY;
         const distance = Math.sqrt(adjustedX * adjustedX + adjustedY * adjustedY);
         const radius = Math.min(width, height) / 2.5;
-        
+
         let hit = null;
         if (distance <= radius) {
             let angle = Math.atan2(adjustedY, adjustedX);
@@ -174,8 +174,8 @@ class PieChart {
         const tooltip = document.getElementById('tooltip');
         if (this.hoveredSlice) {
             tooltip.style.display = 'block';
-            tooltip.style.left = (x + 20) + 'px';
-            tooltip.style.top = (y + 20) + 'px';
+            // tooltip.style.left = (x + 0) + 'px';
+            // tooltip.style.top = (y + 0) + 'px';
             tooltip.innerHTML = `
                 <div style="font-size: 24px; color: #fff; text-shadow: none;">>${this.hoveredSlice.name}</div>
                 <div style="margin-top: 10px;">
@@ -199,26 +199,26 @@ class PieChart {
         this.ctx.translate(width / 2, height / 2);
         this.ctx.scale(this.zoom, this.zoom);
         this.ctx.translate(this.offsetX, this.offsetY);
-        
+
         const radius = Math.min(width, height) / 2.5;
-        
+
         this.slices.forEach(slice => {
             this.ctx.beginPath();
             this.ctx.moveTo(0, 0);
             this.ctx.arc(0, 0, radius, slice.startAngle, slice.endAngle);
             this.ctx.closePath();
-            
+
             this.ctx.fillStyle = slice.color;
-            let isHighlighted = (this.hoveredSlice === slice) || 
-                               (this.searchQuery && slice.name.toLowerCase().includes(this.searchQuery) && slice.name !== 'Other');
-            
-            if (isHighlighted) this.ctx.fillStyle = '#ffffff'; 
-            
+            let isHighlighted = (this.hoveredSlice === slice) ||
+                (this.searchQuery && slice.name.toLowerCase().includes(this.searchQuery) && slice.name !== 'Other');
+
+            if (isHighlighted) this.ctx.fillStyle = '#ffffff';
+
             this.ctx.fill();
             this.ctx.strokeStyle = '#000000';
             this.ctx.lineWidth = 2 / this.zoom;
             this.ctx.stroke();
-            
+
             let midAngle = slice.startAngle + (slice.endAngle - slice.startAngle) / 2;
             if (slice.percentage > 3 && this.zoom > 0.5) {
                 let textX = Math.cos(midAngle) * (radius * 0.7);
@@ -230,18 +230,18 @@ class PieChart {
                 this.ctx.fillText(slice.name, textX, textY);
             }
         });
-        
+
         this.ctx.restore();
-        
+
         this.ctx.beginPath();
-        this.ctx.arc(width/2, height/2, 5, 0, Math.PI * 2);
+        this.ctx.arc(width / 2, height / 2, 5, 0, Math.PI * 2);
         this.ctx.fillStyle = '#00ff41';
         this.ctx.fill();
         this.ctx.beginPath();
-        this.ctx.moveTo(width/2 - 20, height/2);
-        this.ctx.lineTo(width/2 + 20, height/2);
-        this.ctx.moveTo(width/2, height/2 - 20);
-        this.ctx.lineTo(width/2, height/2 + 20);
+        this.ctx.moveTo(width / 2 - 20, height / 2);
+        this.ctx.lineTo(width / 2 + 20, height / 2);
+        this.ctx.moveTo(width / 2, height / 2 - 20);
+        this.ctx.lineTo(width / 2, height / 2 + 20);
         this.ctx.strokeStyle = '#00ff41';
         this.ctx.lineWidth = 1;
         this.ctx.stroke();
@@ -397,17 +397,17 @@ function updateUI() {
     }
 
     // Footer
-    const profileName = profB ? 
-        `${profA.transaction_hash.slice(0, 8)}... vs ${profB.transaction_hash.slice(0, 8)}...` : 
+    const profileName = profB ?
+        `${profA.transaction_hash.slice(0, 8)}... vs ${profB.transaction_hash.slice(0, 8)}...` :
         profA.transaction_hash.slice(0, 10) + '...';
     document.getElementById('profile-name').textContent = profileName;
 
     // Hot Paths
     const hotPathsList = document.getElementById('hot-paths-list');
     hotPathsList.innerHTML = '';
-    
+
     let pathsToShow = profB ? [...profB.hot_paths] : [...profA.hot_paths];
-    
+
     // sorting logic
     if (profB) {
         pathsToShow.sort((a, b) => {
@@ -425,7 +425,7 @@ function updateUI() {
             li.className = 'hot-path-item';
             const name = path.stack.split(';').pop();
             li.id = `path-${name}`;
-            
+
             let deltaDisplay = '';
             let rightSide = '';
             if (profB) {
@@ -449,7 +449,7 @@ function updateUI() {
                 </div>
                 <span class="stack-name">> ${name}</span>
             `;
-            
+
             li.onmouseenter = () => {
                 if (window.app.chartA) {
                     window.app.chartA.hoveredSlice = window.app.chartA.slices.find(s => s.name === name);
