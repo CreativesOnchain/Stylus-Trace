@@ -17,7 +17,10 @@
                 <span class="glitch" data-text="STYLUS_TRACE // VIEWER">STYLUS_TRACE // VIEWER</span>
             </div>
             <div class="search-bar">
-                <input type="text" id="search-input" placeholder=">_ SEARCH SYMBOLS...">
+                <div class="search-wrapper">
+                    <input type="text" id="search-input" spellcheck="false" autocomplete="off">
+                    <div id="search-ghost"></div>
+                </div>
             </div>
             <div class="controls">
                 <button id="zoom-in">[ + ]</button>

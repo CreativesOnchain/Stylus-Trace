@@ -346,26 +346,33 @@ function setupControls() {
 
     const searchInput = document.getElementById('search-input');
     
+    const searchGhost = document.getElementById('search-ghost');
+    searchGhost.textContent = ">_ SEARCH SYMBOLS...";
+
+    searchInput.onfocus = () => { if (searchInput.value === '') searchGhost.textContent = ''; };
+    searchInput.onblur = () => { if (searchInput.value === '') searchGhost.textContent = '>_ SEARCH SYMBOLS...'; };
+
     searchInput.oninput = (e) => {
         const val = e.target.value.toLowerCase();
         
         if (val.length === 0) {
-            searchInput.placeholder = ">_ SEARCH SYMBOLS...";
+            searchGhost.textContent = "";
             updateSearch('');
             return;
         }
 
         // Find matches for ghosting/autocomplete
-        const exactMatch = window.app.availableSymbols.find(s => s.toLowerCase() === val);
         const suggestion = window.app.availableSymbols.find(s => s.toLowerCase().startsWith(val));
         
         if (suggestion) {
-            searchInput.placeholder = `>_ ${suggestion}`;
+            // Display suggestion in ghost - ensure casing matches what's typed for the prefix
+            const typedPrefix = e.target.value;
+            const remaining = suggestion.slice(typedPrefix.length);
+            searchGhost.textContent = typedPrefix + remaining;
         } else {
-            searchInput.placeholder = ">_ SEARCH SYMBOLS...";
+            searchGhost.textContent = "";
         }
 
-        // Apply search query (chart will handle the min-length/exact logic)
         updateSearch(val);
     };
 
@@ -375,6 +382,7 @@ function setupControls() {
             const suggestion = window.app.availableSymbols.find(s => s.toLowerCase().startsWith(val));
             if (suggestion) {
                 searchInput.value = suggestion;
+                searchGhost.textContent = suggestion; 
                 updateSearch(suggestion);
                 if (e.key === 'Tab') e.preventDefault();
             }

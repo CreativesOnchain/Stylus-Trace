@@ -58,19 +58,31 @@ body {
 }
 
 .search-bar { display: flex; flex: 1; justify-content: center; }
-.search-bar input {
+.search-wrapper { position: relative; width: 320px; display: flex; align-items: center; }
+.search-wrapper input {
     background: transparent;
     border: var(--border-style);
     color: var(--green-main);
     font-family: 'VT323', monospace;
     font-size: 20px;
-    padding: 4px 12px;
-    width: 300px;
+    padding: 6px 12px;
+    width: 100%;
     outline: none;
     text-shadow: 0 0 4px var(--green-main);
+    position: relative;
+    z-index: 2;
 }
-.search-bar input::placeholder {
-    color: var(--green-dark);
+#search-ghost {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    transform: translateY(-50%);
+    color: var(--green-main);
+    font-size: 20px;
+    pointer-events: none;
+    z-index: 1;
+    white-space: pre;
+    opacity: 0.3;
 }
 
 .controls { display: flex; gap: 10px; }
@@ -211,7 +223,10 @@ main { display: flex; flex: 1; overflow: hidden; }
                 <span class="glitch" data-text="STYLUS_TRACE // VIEWER">STYLUS_TRACE // VIEWER</span>
             </div>
             <div class="search-bar">
-                <input type="text" id="search-input" placeholder=">_ SEARCH SYMBOLS...">
+                <div class="search-wrapper">
+                    <input type="text" id="search-input" spellcheck="false" autocomplete="off">
+                    <div id="search-ghost"></div>
+                </div>
             </div>
             <div class="controls">
                 <button id="zoom-in">[ + ]</button>
@@ -272,7 +287,7 @@ main { display: flex; flex: 1; overflow: hidden; }
 
     <!-- Data Injection Point -->
     <script id="profile-data" type="application/json">
-        {"version":"1.0.0","transaction_hash":"0x47404c910245f1bf9759ca9a62a13358478e2ea72bcc896c8e0096ad6ef25e3b","total_gas":460111929,"hostio_summary":{"total_calls":15,"by_type":{"storage_flush_cache":1,"storage_cache":2,"msg_value":1,"emit_log":1,"msg_reentrant":1,"other":3,"native_keccak256":1,"storage_load":2,"write_result":1,"msg_sender":1,"read_args":1},"total_hostio_gas":460111929},"hot_paths":[{"stack":"storage_flush_cache","gas":400068073,"percentage":86.9501631634506,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"storage_load_bytes32","gas":42136960,"percentage":9.15798034004026,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"emit_log","gas":17649734,"percentage":3.835965313561779,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"native_keccak256","gas":121800,"percentage":0.026471819642824343,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"write_result","gas":41162,"percentage":0.008946084073382066,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"storage_cache_bytes32","gas":36960,"percentage":0.008032828029546697,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"read_args","gas":13560,"percentage":0.0029471089848661586,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_value","gas":13440,"percentage":0.0029210283743806176,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_sender","gas":13440,"percentage":0.0029210283743806176,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_reentrant","gas":8400,"percentage":0.0018256427339878856,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"pay_for_memory_grow","gas":8400,"percentage":0.0018256427339878856,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"user_returned","gas":0,"percentage":0.0,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"user_entrypoint","gas":0,"percentage":0.0,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}}],"all_stacks":[{"stack":"storage_flush_cache","weight":400068073,"last_pc":0},{"stack":"storage_load_bytes32","weight":42136960,"last_pc":0},{"stack":"emit_log","weight":17649734,"last_pc":0},{"stack":"native_keccak256","weight":121800,"last_pc":0},{"stack":"write_result","weight":41162,"last_pc":0},{"stack":"storage_cache_bytes32","weight":36960,"last_pc":0},{"stack":"read_args","weight":13560,"last_pc":0},{"stack":"msg_value","weight":13440,"last_pc":0},{"stack":"msg_sender","weight":13440,"last_pc":0},{"stack":"msg_reentrant","weight":8400,"last_pc":0},{"stack":"pay_for_memory_grow","weight":8400,"last_pc":0},{"stack":"user_returned","weight":0,"last_pc":0},{"stack":"user_entrypoint","weight":0,"last_pc":0}],"generated_at":"2026-02-19T00:39:29.748484086+00:00"}
+        {"version":"1.0.0","transaction_hash":"0x47404c910245f1bf9759ca9a62a13358478e2ea72bcc896c8e0096ad6ef25e3b","total_gas":460111929,"hostio_summary":{"total_calls":15,"by_type":{"msg_value":1,"native_keccak256":1,"storage_cache":2,"write_result":1,"read_args":1,"storage_load":2,"msg_reentrant":1,"emit_log":1,"other":3,"msg_sender":1,"storage_flush_cache":1},"total_hostio_gas":460111929},"hot_paths":[{"stack":"storage_flush_cache","gas":400068073,"percentage":86.9501631634506,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"storage_load_bytes32","gas":42136960,"percentage":9.15798034004026,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"emit_log","gas":17649734,"percentage":3.835965313561779,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"native_keccak256","gas":121800,"percentage":0.026471819642824343,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"write_result","gas":41162,"percentage":0.008946084073382066,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"storage_cache_bytes32","gas":36960,"percentage":0.008032828029546697,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"read_args","gas":13560,"percentage":0.0029471089848661586,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_value","gas":13440,"percentage":0.0029210283743806176,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_sender","gas":13440,"percentage":0.0029210283743806176,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_reentrant","gas":8400,"percentage":0.0018256427339878856,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"pay_for_memory_grow","gas":8400,"percentage":0.0018256427339878856,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"user_returned","gas":0,"percentage":0.0,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"user_entrypoint","gas":0,"percentage":0.0,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}}],"all_stacks":[{"stack":"storage_flush_cache","weight":400068073,"last_pc":0},{"stack":"storage_load_bytes32","weight":42136960,"last_pc":0},{"stack":"emit_log","weight":17649734,"last_pc":0},{"stack":"native_keccak256","weight":121800,"last_pc":0},{"stack":"write_result","weight":41162,"last_pc":0},{"stack":"storage_cache_bytes32","weight":36960,"last_pc":0},{"stack":"read_args","weight":13560,"last_pc":0},{"stack":"msg_value","weight":13440,"last_pc":0},{"stack":"msg_sender","weight":13440,"last_pc":0},{"stack":"msg_reentrant","weight":8400,"last_pc":0},{"stack":"pay_for_memory_grow","weight":8400,"last_pc":0},{"stack":"user_returned","weight":0,"last_pc":0},{"stack":"user_entrypoint","weight":0,"last_pc":0}],"generated_at":"2026-02-19T00:39:29.748484086+00:00"}
     </script>
     <script id="profile-b-data" type="application/json">
         /* PROFILE_B_DATA_JSON */
@@ -629,26 +644,33 @@ function setupControls() {
 
     const searchInput = document.getElementById('search-input');
     
+    const searchGhost = document.getElementById('search-ghost');
+    searchGhost.textContent = ">_ SEARCH SYMBOLS...";
+
+    searchInput.onfocus = () => { if (searchInput.value === '') searchGhost.textContent = ''; };
+    searchInput.onblur = () => { if (searchInput.value === '') searchGhost.textContent = '>_ SEARCH SYMBOLS...'; };
+
     searchInput.oninput = (e) => {
         const val = e.target.value.toLowerCase();
         
         if (val.length === 0) {
-            searchInput.placeholder = ">_ SEARCH SYMBOLS...";
+            searchGhost.textContent = "";
             updateSearch('');
             return;
         }
 
         // Find matches for ghosting/autocomplete
-        const exactMatch = window.app.availableSymbols.find(s => s.toLowerCase() === val);
         const suggestion = window.app.availableSymbols.find(s => s.toLowerCase().startsWith(val));
         
         if (suggestion) {
-            searchInput.placeholder = `>_ ${suggestion}`;
+            // Display suggestion in ghost - ensure casing matches what's typed for the prefix
+            const typedPrefix = e.target.value;
+            const remaining = suggestion.slice(typedPrefix.length);
+            searchGhost.textContent = typedPrefix + remaining;
         } else {
-            searchInput.placeholder = ">_ SEARCH SYMBOLS...";
+            searchGhost.textContent = "";
         }
 
-        // Apply search query (chart will handle the min-length/exact logic)
         updateSearch(val);
     };
 
@@ -658,6 +680,7 @@ function setupControls() {
             const suggestion = window.app.availableSymbols.find(s => s.toLowerCase().startsWith(val));
             if (suggestion) {
                 searchInput.value = suggestion;
+                searchGhost.textContent = suggestion; 
                 updateSearch(suggestion);
                 if (e.key === 'Tab') e.preventDefault();
             }

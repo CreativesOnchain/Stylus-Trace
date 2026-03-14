@@ -52,19 +52,31 @@ body {
 }
 
 .search-bar { display: flex; flex: 1; justify-content: center; }
-.search-bar input {
+.search-wrapper { position: relative; width: 320px; display: flex; align-items: center; }
+.search-wrapper input {
     background: transparent;
     border: var(--border-style);
     color: var(--green-main);
     font-family: 'VT323', monospace;
     font-size: 20px;
-    padding: 4px 12px;
-    width: 300px;
+    padding: 6px 12px;
+    width: 100%;
     outline: none;
     text-shadow: 0 0 4px var(--green-main);
+    position: relative;
+    z-index: 2;
 }
-.search-bar input::placeholder {
-    color: var(--green-dark);
+#search-ghost {
+    position: absolute;
+    top: 50%;
+    left: 12px;
+    transform: translateY(-50%);
+    color: var(--green-main);
+    font-size: 20px;
+    pointer-events: none;
+    z-index: 1;
+    white-space: pre;
+    opacity: 0.3;
 }
 
 .controls { display: flex; gap: 10px; }
