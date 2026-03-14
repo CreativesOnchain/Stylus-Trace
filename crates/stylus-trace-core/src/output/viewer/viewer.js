@@ -209,8 +209,13 @@ class PieChart {
             this.ctx.closePath();
 
             this.ctx.fillStyle = slice.color;
-            let isHighlighted = (this.hoveredSlice === slice) ||
-                (this.searchQuery && slice.name.toLowerCase().includes(this.searchQuery) && slice.name !== 'Other');
+            let isHighlighted = (this.hoveredSlice === slice);
+            if (!isHighlighted && this.searchQuery && slice.name !== 'Other') {
+                const query = this.searchQuery.toLowerCase();
+                const sliceName = slice.name.toLowerCase();
+                // Highlight if exact match OR if it's a prefix of at least 3 chars
+                isHighlighted = (sliceName === query) || (query.length >= 3 && sliceName.startsWith(query));
+            }
 
             if (isHighlighted) this.ctx.fillStyle = '#ffffff';
 
@@ -267,7 +272,8 @@ window.app = {
     chartA: null,
     chartB: null,
     syncZoom: true,
-    searchQuery: ''
+    searchQuery: '',
+    availableSymbols: []
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -337,13 +343,55 @@ function setupControls() {
     document.getElementById('zoom-in').onclick = zoomIn;
     document.getElementById('zoom-out').onclick = zoomOut;
     document.getElementById('reset-view').onclick = reset;
-    document.getElementById('search-input').oninput = (e) => {
-        window.app.searchQuery = e.target.value.toLowerCase();
-        if (window.app.chartA) window.app.chartA.searchQuery = window.app.searchQuery;
-        if (window.app.chartB) window.app.chartB.searchQuery = window.app.searchQuery;
-        if (window.app.chartA) window.app.chartA.render();
-        if (window.app.chartB) window.app.chartB.render();
+
+    const searchInput = document.getElementById('search-input');
+    
+    searchInput.oninput = (e) => {
+        const val = e.target.value.toLowerCase();
+        
+        if (val.length === 0) {
+            searchInput.placeholder = ">_ SEARCH SYMBOLS...";
+            updateSearch('');
+            return;
+        }
+
+        // Find matches for ghosting/autocomplete
+        const exactMatch = window.app.availableSymbols.find(s => s.toLowerCase() === val);
+        const suggestion = window.app.availableSymbols.find(s => s.toLowerCase().startsWith(val));
+        
+        if (suggestion) {
+            searchInput.placeholder = `>_ ${suggestion}`;
+        } else {
+            searchInput.placeholder = ">_ SEARCH SYMBOLS...";
+        }
+
+        // Apply search query (chart will handle the min-length/exact logic)
+        updateSearch(val);
     };
+
+    searchInput.onkeydown = (e) => {
+        if (e.key === 'Enter' || e.key === 'Tab') {
+            const val = searchInput.value.toLowerCase();
+            const suggestion = window.app.availableSymbols.find(s => s.toLowerCase().startsWith(val));
+            if (suggestion) {
+                searchInput.value = suggestion;
+                updateSearch(suggestion);
+                if (e.key === 'Tab') e.preventDefault();
+            }
+        }
+    };
+
+    function updateSearch(query) {
+        window.app.searchQuery = query;
+        if (window.app.chartA) {
+            window.app.chartA.searchQuery = query;
+            window.app.chartA.render();
+        }
+        if (window.app.chartB) {
+            window.app.chartB.searchQuery = query;
+            window.app.chartB.render();
+        }
+    }
     window.addEventListener('keydown', (e) => {
         if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
             e.preventDefault();
@@ -396,11 +444,20 @@ function updateUI() {
         document.getElementById('hostio-delta').textContent = ioA.toLocaleString();
     }
 
-    // Footer
     const profileName = profB ?
         `${profA.transaction_hash.slice(0, 8)}... vs ${profB.transaction_hash.slice(0, 8)}...` :
         profA.transaction_hash.slice(0, 10) + '...';
     document.getElementById('profile-name').textContent = profileName;
+
+    // Collect symbols for autocomplete with safety guards
+    const symbols = new Set();
+    if (profA && profA.hot_paths) {
+        profA.hot_paths.forEach(p => symbols.add(p.stack.split(';').pop()));
+    }
+    if (profB && profB.hot_paths) {
+        profB.hot_paths.forEach(p => symbols.add(p.stack.split(';').pop()));
+    }
+    window.app.availableSymbols = Array.from(symbols).sort();
 
     // Hot Paths
     const hotPathsList = document.getElementById('hot-paths-list');
