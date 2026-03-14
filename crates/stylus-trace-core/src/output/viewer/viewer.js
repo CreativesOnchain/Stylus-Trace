@@ -1,94 +1,75 @@
 /**
- * Stylus-Trace Studio Viewer Logic
+ * Stylus-Trace Studio - Pie Chart Viewer Logic (Retro Tech Theme)
  */
 
-const CONFIG = {
-    rowHeight: 24,
-    minBoxWidth: 0.5,
-    font: '12px "Inter", sans-serif',
-    colors: {
-        StorageExpensive: '#dc143c',
-        StorageNormal: '#ff8c00',
-        Crypto: '#8a2be2',
-        Memory: '#228b22',
-        Call: '#4682b4',
-        System: '#6495ed',
-        Root: '#4b0082',
-        UserCode: '#848d97',
-        Background: '#010409',
-        Border: '#30363d',
-        Text: '#e6edf3',
-        Regression: '#ff4d4d',
-        Improvement: '#2ecc71',
-        Stable: '#f0f0f0'
-    }
-};
-
-class Flamegraph {
+class PieChart {
     constructor(canvasId, data, isDiff = false) {
         this.canvas = document.getElementById(canvasId);
-        this.ctx = this.canvas.getContext('2d', { alpha: false });
+        this.ctx = this.canvas.getContext('2d');
         this.data = data;
         this.isDiff = isDiff;
         this.zoom = 1.0;
         this.offsetX = 0;
-        this.nodes = [];
-        this.hoveredNode = null;
+        this.offsetY = 0;
+        this.hoveredSlice = null;
+        this.searchQuery = '';
         
         this.init();
     }
 
     init() {
-        this.buildTree();
+        this.processData();
         this.setupListeners();
-        this.resize();
-        window.addEventListener('resize', () => this.resize());
+        // Delay initial resize to ensure CSS is loaded and dimensions are correct
+        setTimeout(() => {
+            this.resize();
+            window.addEventListener('resize', () => this.resize());
+        }, 100);
     }
 
-    buildTree() {
-        if (!this.data) return;
+    processData() {
+        if (!this.data || !this.data.hot_paths) return;
         
-        // Handle both Profile and Diff reports
-        if (this.data.summary && this.data.metrics) { 
-            // This is a diff report
-            this.tree = this.convertDiffToTree(this.data);
-        } else if (this.data.all_stacks) {
-            // This is a standard profile
-            this.tree = this.convertStacksToTree(this.data.all_stacks, this.data.total_gas);
-        }
-    }
-
-    convertStacksToTree(stacks, totalGas) {
-        const root = { name: 'root', value: totalGas, children: {}, depth: 0 };
-        stacks.forEach(stack => {
-            let current = root;
-            const parts = stack.stack.split(';');
-            if (parts[0] === 'root') parts.shift();
-
-            parts.forEach((part, i) => {
-                if (!current.children[part]) {
-                    current.children[part] = { name: part, value: 0, children: {}, depth: i + 1 };
-                }
-                current = current.children[part];
-                if (i === parts.length - 1) {
-                    current.value += stack.weight;
-                }
+        let total = this.data.total_gas;
+        let tracked = 0;
+        this.slices = [];
+        
+        // Retro green shades for the pie chart
+        const colors = [
+            '#00ff41', '#00e63a', '#00cc33', '#00b32d', 
+            '#009926', '#008020', '#006619', '#004d13'
+        ];
+        
+        this.data.hot_paths.slice(0, 15).forEach((path, i) => {
+            let name = path.stack.split(';').pop();
+            this.slices.push({
+                name: name,
+                fullStack: path.stack,
+                value: path.gas,
+                percentage: path.percentage,
+                color: colors[i % colors.length]
             });
+            tracked += path.gas;
         });
-        this.calculateCumulative(root);
-        return root;
-    }
-
-    convertDiffToTree(diffReport) {
-        // Implement complex diff tree reconstruction if needed
-        // For now, if we have Profile B data, we render two separate graphs
-        return null; 
-    }
-
-    calculateCumulative(node) {
-        let childWeight = Object.values(node.children).reduce((acc, child) => acc + this.calculateCumulative(child), 0);
-        node.value = Math.max(node.value, childWeight);
-        return node.value;
+        
+        if (total > tracked) {
+            this.slices.push({
+                name: 'Other',
+                fullStack: 'Other Operations',
+                value: total - tracked,
+                percentage: ((total - tracked) / total) * 100,
+                color: '#002209'
+            });
+        }
+        
+        // Calculate angles
+        let startAngle = 0;
+        this.slices.forEach(slice => {
+            let sliceAngle = (slice.value / total) * 2 * Math.PI;
+            slice.startAngle = startAngle;
+            slice.endAngle = startAngle + sliceAngle;
+            startAngle += sliceAngle;
+        });
     }
 
     resize() {
@@ -103,28 +84,35 @@ class Flamegraph {
     setupListeners() {
         this.canvas.addEventListener('mousemove', (e) => {
             const rect = this.canvas.getBoundingClientRect();
-            const x = (e.clientX - rect.left) / this.zoom - this.offsetX;
-            const y = e.clientY - rect.top;
-            this.handleMouseMove(x, y, e.clientX, e.clientY);
+            // Mouse coordinates relative to canvas
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            this.handleMouseMove(mouseX, mouseY, e.clientX, e.clientY);
         });
 
         this.canvas.addEventListener('mousedown', (e) => {
             this.isDragging = true;
             this.lastX = e.clientX;
+            this.lastY = e.clientY;
         });
 
         window.addEventListener('mouseup', () => this.isDragging = false);
 
         window.addEventListener('mousemove', (e) => {
             if (this.isDragging) {
-                const dx = (e.clientX - this.lastX) / this.zoom;
-                this.offsetX += dx;
+                const dx = (e.clientX - this.lastX);
+                const dy = (e.clientY - this.lastY);
+                this.offsetX += dx / this.zoom;
+                this.offsetY += dy / this.zoom;
                 this.lastX = e.clientX;
+                this.lastY = e.clientY;
                 this.render();
+                
                 if (window.app.syncZoom) {
-                    const other = this === window.app.flamegraphA ? window.app.flamegraphB : window.app.flamegraphA;
+                    const other = this === window.app.chartA ? window.app.chartB : window.app.chartA;
                     if (other) {
                         other.offsetX = this.offsetX;
+                        other.offsetY = this.offsetY;
                         other.render();
                     }
                 }
@@ -133,22 +121,16 @@ class Flamegraph {
 
         this.canvas.addEventListener('wheel', (e) => {
             e.preventDefault();
-            const rect = this.canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
             
-            const oldZoom = this.zoom;
             this.zoom *= e.deltaY > 0 ? 0.9 : 1.1;
-            this.zoom = Math.max(0.1, Math.min(this.zoom, 100));
+            this.zoom = Math.max(0.1, Math.min(this.zoom, 10));
 
-            // Zoom towards mouse
-            this.offsetX -= (mouseX / oldZoom - mouseX / this.zoom);
-            
             this.render();
+            
             if (window.app.syncZoom) {
-                const other = this === window.app.flamegraphA ? window.app.flamegraphB : window.app.flamegraphA;
+                const other = this === window.app.chartA ? window.app.chartB : window.app.chartA;
                 if (other) {
                     other.zoom = this.zoom;
-                    other.offsetX = this.offsetX;
                     other.render();
                 }
             }
@@ -156,32 +138,56 @@ class Flamegraph {
     }
 
     handleMouseMove(x, y, screenX, screenY) {
-        const hit = this.nodes.find(node => 
-            x >= node.x && x <= node.x + node.w &&
-            y >= node.y && y <= node.y + node.h
-        );
+        if (!this.slices) return;
+        
+        const width = this.canvas.width / (window.devicePixelRatio || 1);
+        const height = this.canvas.height / (window.devicePixelRatio || 1);
+        
+        // Transform mouse coordinates back to pie chart space
+        const centerX = width / 2;
+        const centerY = height / 2;
+        
+        // Account for translation and scaling
+        const adjustedX = (x - centerX) / this.zoom - this.offsetX;
+        const adjustedY = (y - centerY) / this.zoom - this.offsetY;
+        
+        const distance = Math.sqrt(adjustedX * adjustedX + adjustedY * adjustedY);
+        const radius = Math.min(width, height) / 2.5;
+        
+        let hit = null;
+        if (distance <= radius) {
+            let angle = Math.atan2(adjustedY, adjustedX);
+            if (angle < 0) angle += 2 * Math.PI;
+            
+            hit = this.slices.find(slice => angle >= slice.startAngle && angle <= slice.endAngle);
+        }
 
-        if (hit !== this.hoveredNode) {
-            this.hoveredNode = hit;
+        if (hit !== this.hoveredSlice) {
+            this.hoveredSlice = hit;
             this.updateTooltip(screenX, screenY);
             this.render();
+            
+            // Highlight list item if available
+            document.querySelectorAll('.hot-path-item').forEach(el => el.classList.remove('highlight'));
+            if (hit && hit.name !== 'Other') {
+                const el = document.getElementById(`path-${hit.name}`);
+                if (el) el.classList.add('highlight');
+            }
         }
     }
 
     updateTooltip(x, y) {
         const tooltip = document.getElementById('tooltip');
-        if (this.hoveredNode) {
+        if (this.hoveredSlice) {
             tooltip.style.display = 'block';
-            tooltip.style.left = (x + 15) + 'px';
-            tooltip.style.top = (y + 15) + 'px';
-            
-            let colorDot = `<span style="display:inline-block;width:10px;height:10px;background:${CONFIG.colors[this.getCategory(this.hoveredNode.name)]};margin-right:8px;border-radius:2px"></span>`;
+            tooltip.style.left = (x + 20) + 'px';
+            tooltip.style.top = (y + 20) + 'px';
             
             tooltip.innerHTML = `
-                <div style="font-weight:600;margin-bottom:4px;border-bottom:1px solid #333;padding-bottom:4px">${colorDot}${this.hoveredNode.name}</div>
-                <div style="display:grid;grid-template-columns:auto 1fr;gap:8px;font-family:'JetBrains Mono'">
-                    <span>Gas:</span> <span style="text-align:right">${this.hoveredNode.value.toLocaleString()}</span>
-                    <span>Pct:</span> <span style="text-align:right">${((this.hoveredNode.value / this.tree.value) * 100).toFixed(2)}%</span>
+                <div style="font-size: 24px; color: #fff; text-shadow: none;">>${this.hoveredSlice.name}</div>
+                <div style="margin-top: 10px;">
+                    <div>GAS_USED: ${this.hoveredSlice.value.toLocaleString()}</div>
+                    <div>SHARE:    ${this.hoveredSlice.percentage.toFixed(2)}%</div>
                 </div>
             `;
         } else {
@@ -193,81 +199,73 @@ class Flamegraph {
         const width = this.canvas.width / (window.devicePixelRatio || 1);
         const height = this.canvas.height / (window.devicePixelRatio || 1);
 
-        this.ctx.fillStyle = CONFIG.colors.Background;
-        this.ctx.fillRect(0, 0, width, height);
-        this.nodes = [];
+        // Clear with transparency, background handled by CSS
+        this.ctx.clearRect(0, 0, width, height);
 
-        if (!this.tree) return;
+        if (!this.slices) return;
 
-        const self = this;
-        function renderNode(node, x, depth, w) {
-            const screenX = (x + self.offsetX) * self.zoom;
-            const screenW = w * self.zoom;
-
-            if (screenX + screenW < 0 || screenX > width) return; // Frustum culling
-            if (screenW < CONFIG.minBoxWidth) return;
-
-            const y = height - (depth + 1) * CONFIG.rowHeight - 40;
-            const h = CONFIG.rowHeight;
-
-            const category = self.getCategory(node.name);
-            const color = CONFIG.colors[category] || CONFIG.colors.UserCode;
-
-            self.ctx.fillStyle = color;
-            self.ctx.fillRect(screenX, y, screenW, h);
-            self.ctx.strokeStyle = CONFIG.colors.Background;
-            self.ctx.lineWidth = 0.5;
-            self.ctx.strokeRect(screenX, y, screenW, h);
-
-            if (self.hoveredNode && self.hoveredNode.name === node.name) {
-                self.ctx.strokeStyle = '#fff';
-                self.ctx.lineWidth = 2;
-                self.ctx.strokeRect(screenX, y, screenW, h);
+        this.ctx.save();
+        this.ctx.translate(width / 2, height / 2);
+        this.ctx.scale(this.zoom, this.zoom);
+        this.ctx.translate(this.offsetX, this.offsetY);
+        
+        const radius = Math.min(width, height) / 2.5;
+        
+        this.slices.forEach(slice => {
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, 0);
+            this.ctx.arc(0, 0, radius, slice.startAngle, slice.endAngle);
+            this.ctx.closePath();
+            
+            this.ctx.fillStyle = slice.color;
+            
+            let isHighlighted = false;
+            if (this.hoveredSlice === slice) {
+                isHighlighted = true;
             }
-
-            if (screenW > 40) {
-                self.ctx.fillStyle = '#fff';
-                self.ctx.font = CONFIG.font;
-                self.ctx.textAlign = 'left';
-                const label = self.truncateText(node.name, screenW - 8);
-                if (label) self.ctx.fillText(label, screenX + 4, y + h / 2 + 4);
+            if (this.searchQuery && slice.name.toLowerCase().includes(this.searchQuery) && slice.name !== 'Other') {
+                isHighlighted = true;
             }
-
-            self.nodes.push({ name: node.name, x, y, w, h, value: node.value });
-
-            let currentX = x;
-            Object.values(node.children)
-                .sort((a, b) => b.value - a.value)
-                .forEach(child => {
-                    const childW = (child.value / node.value) * w;
-                    renderNode(child, currentX, depth + 1, childW);
-                    currentX += childW;
-                });
-        }
-
-        renderNode(this.tree, 0, 0, width / this.zoom);
-    }
-
-    getCategory(name) {
-        if (name === 'root') return 'Root';
-        if (name.includes('storage_store') || name.includes('storage_flush')) return 'StorageExpensive';
-        if (name.includes('storage_load') || name.includes('storage_cache')) return 'StorageNormal';
-        if (name.includes('keccak')) return 'Crypto';
-        if (name.includes('memory') || name.includes('args') || name.includes('result')) return 'Memory';
-        if (name.includes('call') || name.includes('create')) return 'Call';
-        if (name.includes('host') || name.includes('msg') || name.includes('block')) return 'System';
-        return 'UserCode';
-    }
-
-    truncateText(text, maxWidth) {
-        let width = this.ctx.measureText(text).width;
-        if (width <= maxWidth) return text;
-        let truncated = text;
-        while (truncated.length > 0 && width > maxWidth) {
-            truncated = truncated.slice(0, -1);
-            width = this.ctx.measureText(truncated + '...').width;
-        }
-        return truncated ? truncated + '...' : '';
+            
+            if (isHighlighted) {
+                this.ctx.fillStyle = '#ffffff'; 
+            }
+            
+            this.ctx.fill();
+            this.ctx.strokeStyle = '#000000';
+            this.ctx.lineWidth = 2 / this.zoom;
+            this.ctx.stroke();
+            
+            // Render label if slice is large enough
+            let midAngle = slice.startAngle + (slice.endAngle - slice.startAngle) / 2;
+            if (slice.percentage > 3 && this.zoom > 0.5) {
+                let textX = Math.cos(midAngle) * (radius * 0.7);
+                let textY = Math.sin(midAngle) * (radius * 0.7);
+                
+                this.ctx.fillStyle = isHighlighted ? '#000' : '#000';
+                this.ctx.font = `${Math.max(12, 16 / this.zoom)}px 'VT323'`;
+                this.ctx.textAlign = 'center';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.fillText(slice.name, textX, textY);
+            }
+        });
+        
+        this.ctx.restore();
+        
+        // Draw center HUD element
+        this.ctx.beginPath();
+        this.ctx.arc(width/2, height/2, 5, 0, Math.PI * 2);
+        this.ctx.fillStyle = '#00ff41';
+        this.ctx.fill();
+        
+        this.ctx.beginPath();
+        this.ctx.moveTo(width/2 - 20, height/2);
+        this.ctx.lineTo(width/2 + 20, height/2);
+        this.ctx.moveTo(width/2, height/2 - 20);
+        this.ctx.lineTo(width/2, height/2 + 20);
+        this.ctx.strokeStyle = '#00ff41';
+        this.ctx.lineWidth = 1;
+        this.ctx.stroke();
     }
 }
 
@@ -276,9 +274,10 @@ window.app = {
     profileA: null,
     profileB: null,
     diff: null,
-    flamegraphA: null,
-    flamegraphB: null,
-    syncZoom: true
+    chartA: null,
+    chartB: null,
+    syncZoom: true,
+    searchQuery: ''
 };
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -287,13 +286,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     if (window.app.profileA) {
         updateUI(window.app.profileA);
-        window.app.flamegraphA = new Flamegraph('canvas-a', window.app.profileA);
+        window.app.chartA = new PieChart('canvas-a', window.app.profileA);
     }
     
     if (window.app.profileB) {
-        document.getElementById('flamegraph-b').classList.remove('hidden');
+        document.getElementById('chart-b').classList.remove('hidden');
         document.getElementById('toggle-diff').classList.remove('hidden');
-        window.app.flamegraphB = new Flamegraph('canvas-b', window.app.profileB);
+        window.app.chartB = new PieChart('canvas-b', window.app.profileB, true);
     }
 });
 
@@ -316,31 +315,39 @@ function loadData() {
 
 function setupControls() {
     const zoomIn = () => {
-        window.app.flamegraphA.zoom *= 1.2;
-        window.app.flamegraphA.render();
-        if (window.app.flamegraphB) {
-            window.app.flamegraphB.zoom = window.app.flamegraphA.zoom;
-            window.app.flamegraphB.render();
+        if (window.app.chartA) {
+            window.app.chartA.zoom *= 1.2;
+            window.app.chartA.render();
+        }
+        if (window.app.chartB) {
+            window.app.chartB.zoom = window.app.chartA.zoom;
+            window.app.chartB.render();
         }
     };
     
     const zoomOut = () => {
-        window.app.flamegraphA.zoom *= 0.8;
-        window.app.flamegraphA.render();
-        if (window.app.flamegraphB) {
-            window.app.flamegraphB.zoom = window.app.flamegraphA.zoom;
-            window.app.flamegraphB.render();
+        if (window.app.chartA) {
+            window.app.chartA.zoom *= 0.8;
+            window.app.chartA.render();
+        }
+        if (window.app.chartB) {
+            window.app.chartB.zoom = window.app.chartA.zoom;
+            window.app.chartB.render();
         }
     };
 
     const reset = () => {
-        window.app.flamegraphA.zoom = 1.0;
-        window.app.flamegraphA.offsetX = 0;
-        window.app.flamegraphA.render();
-        if (window.app.flamegraphB) {
-            window.app.flamegraphB.zoom = 1.0;
-            window.app.flamegraphB.offsetX = 0;
-            window.app.flamegraphB.render();
+        if (window.app.chartA) {
+            window.app.chartA.zoom = 1.0;
+            window.app.chartA.offsetX = 0;
+            window.app.chartA.offsetY = 0;
+            window.app.chartA.render();
+        }
+        if (window.app.chartB) {
+            window.app.chartB.zoom = 1.0;
+            window.app.chartB.offsetX = 0;
+            window.app.chartB.offsetY = 0;
+            window.app.chartB.render();
         }
     }
 
@@ -349,11 +356,12 @@ function setupControls() {
     document.getElementById('reset-view').onclick = reset;
     
     document.getElementById('search-input').oninput = (e) => {
-        const query = e.target.value.toLowerCase();
-        // Implement search highlight in render
-        window.app.searchQuery = query;
-        window.app.flamegraphA.render();
-        if (window.app.flamegraphB) window.app.flamegraphB.render();
+        window.app.searchQuery = e.target.value.toLowerCase();
+        if (window.app.chartA) window.app.chartA.searchQuery = window.app.searchQuery;
+        if (window.app.chartB) window.app.chartB.searchQuery = window.app.searchQuery;
+        
+        if (window.app.chartA) window.app.chartA.render();
+        if (window.app.chartB) window.app.chartB.render();
     };
 
     window.addEventListener('keydown', (e) => {
@@ -367,24 +375,37 @@ function setupControls() {
 function updateUI(profile) {
     document.querySelector('.tx-hash').textContent = profile.transaction_hash;
     document.getElementById('total-gas').textContent = profile.total_gas.toLocaleString();
-    document.getElementById('total-hostios').textContent = profile.hostio_summary.total_calls;
+    document.getElementById('total-hostios').textContent = (profile.hostio_summary?.total_calls || 0).toLocaleString();
     document.getElementById('profile-name').textContent = profile.transaction_hash.slice(0, 10) + '...';
 
     const hotPathsList = document.getElementById('hot-paths-list');
-    profile.hot_paths.slice(0, 15).forEach(path => {
-        const li = document.createElement('li');
-        li.className = 'hot-path-item';
-        const name = path.stack.split(';').pop();
-        li.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:center">
-                <span class="percentage">${path.percentage.toFixed(1)}%</span>
-                <span style="font-size:10px;color:#888">${(path.gas / 1000).toFixed(0)}k gas</span>
-            </div>
-            <span class="stack-name">${name}</span>
-        `;
-        li.onclick = () => {
-             // Logic to find and zoom to node
-        };
-        hotPathsList.appendChild(li);
-    });
+    hotPathsList.innerHTML = '';
+    if (profile.hot_paths) {
+        profile.hot_paths.slice(0, 10).forEach(path => {
+            const li = document.createElement('li');
+            li.className = 'hot-path-item';
+            const name = path.stack.split(';').pop();
+            li.id = `path-${name}`;
+            li.innerHTML = `
+                <div style="display:flex;justify-content:space-between;">
+                    <span style="color: #fff;">[${path.percentage.toFixed(1)}%]</span>
+                    <span>${(path.gas / 1000).toFixed(0)}k gas</span>
+                </div>
+                <span class="stack-name">> ${name}</span>
+            `;
+            li.onmouseenter = () => {
+                if (window.app.chartA) {
+                    window.app.chartA.hoveredSlice = window.app.chartA.slices.find(s => s.name === name);
+                    window.app.chartA.render();
+                }
+            };
+            li.onmouseleave = () => {
+                if (window.app.chartA) {
+                    window.app.chartA.hoveredSlice = null;
+                    window.app.chartA.render();
+                }
+            };
+            hotPathsList.appendChild(li);
+        });
+    }
 }
