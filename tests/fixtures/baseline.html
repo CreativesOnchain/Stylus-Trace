@@ -136,7 +136,12 @@ main { display: flex; flex: 1; overflow: hidden; }
 }
 .stat-row .label { font-size: 16px; color: #fff; opacity: 0.8; margin-bottom: 4px; }
 .stat-row .value { font-size: 20px; color: var(--green-main); }
-.stat-row .delta { margin-left: 10px; font-weight: bold; }
+.stat-row .delta { 
+    margin-left: 10px; 
+    font-weight: bold; 
+    font-size: 22px;
+    letter-spacing: 1px;
+}
 .stat-row .delta.pos { color: #ff4d4d; }
 .stat-row .delta.neg { color: #00ff41; }
 .stat-row .delta.neutral { color: #888; }
@@ -212,7 +217,6 @@ main { display: flex; flex: 1; overflow: hidden; }
                 <button id="zoom-in">[ + ]</button>
                 <button id="zoom-out">[ - ]</button>
                 <button id="reset-view">[ RESET ]</button>
-                <button id="toggle-diff" class="hidden">[ DIFF ]</button>
             </div>
         </header>
 
@@ -230,11 +234,11 @@ main { display: flex; flex: 1; overflow: hidden; }
                     </div>
                     <div class="stats-column">
                         <div class="stat-row">
-                            <div class="label">GAS_DELTA:</div>
+                            <div class="label" id="gas-label">TOTAL_GAS:</div>
                             <div class="value" id="gas-delta">-</div>
                         </div>
                         <div class="stat-row">
-                            <div class="label">HOST_IO_DELTA:</div>
+                            <div class="label" id="hostio-label">HOST_IO_CALLS:</div>
                             <div class="value" id="hostio-delta">-</div>
                         </div>
                     </div>
@@ -268,7 +272,7 @@ main { display: flex; flex: 1; overflow: hidden; }
 
     <!-- Data Injection Point -->
     <script id="profile-data" type="application/json">
-        {"version":"1.0.0","transaction_hash":"0x47404c910245f1bf9759ca9a62a13358478e2ea72bcc896c8e0096ad6ef25e3b","total_gas":460111929,"hostio_summary":{"total_calls":15,"by_type":{"read_args":1,"storage_load":2,"msg_sender":1,"other":3,"msg_value":1,"storage_cache":2,"write_result":1,"native_keccak256":1,"msg_reentrant":1,"emit_log":1,"storage_flush_cache":1},"total_hostio_gas":460111929},"hot_paths":[{"stack":"storage_flush_cache","gas":400068073,"percentage":86.9501631634506,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"storage_load_bytes32","gas":42136960,"percentage":9.15798034004026,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"emit_log","gas":17649734,"percentage":3.835965313561779,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"native_keccak256","gas":121800,"percentage":0.026471819642824343,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"write_result","gas":41162,"percentage":0.008946084073382066,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"storage_cache_bytes32","gas":36960,"percentage":0.008032828029546697,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"read_args","gas":13560,"percentage":0.0029471089848661586,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_value","gas":13440,"percentage":0.0029210283743806176,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_sender","gas":13440,"percentage":0.0029210283743806176,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_reentrant","gas":8400,"percentage":0.0018256427339878856,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"pay_for_memory_grow","gas":8400,"percentage":0.0018256427339878856,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"user_returned","gas":0,"percentage":0.0,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"user_entrypoint","gas":0,"percentage":0.0,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}}],"all_stacks":[{"stack":"storage_flush_cache","weight":400068073,"last_pc":0},{"stack":"storage_load_bytes32","weight":42136960,"last_pc":0},{"stack":"emit_log","weight":17649734,"last_pc":0},{"stack":"native_keccak256","weight":121800,"last_pc":0},{"stack":"write_result","weight":41162,"last_pc":0},{"stack":"storage_cache_bytes32","weight":36960,"last_pc":0},{"stack":"read_args","weight":13560,"last_pc":0},{"stack":"msg_value","weight":13440,"last_pc":0},{"stack":"msg_sender","weight":13440,"last_pc":0},{"stack":"msg_reentrant","weight":8400,"last_pc":0},{"stack":"pay_for_memory_grow","weight":8400,"last_pc":0},{"stack":"user_returned","weight":0,"last_pc":0},{"stack":"user_entrypoint","weight":0,"last_pc":0}],"generated_at":"2026-02-19T00:39:29.748484086+00:00"}
+        {"version":"1.0.0","transaction_hash":"0x47404c910245f1bf9759ca9a62a13358478e2ea72bcc896c8e0096ad6ef25e3b","total_gas":460111929,"hostio_summary":{"total_calls":15,"by_type":{"other":3,"write_result":1,"storage_cache":2,"msg_reentrant":1,"emit_log":1,"msg_value":1,"storage_load":2,"storage_flush_cache":1,"read_args":1,"msg_sender":1,"native_keccak256":1},"total_hostio_gas":460111929},"hot_paths":[{"stack":"storage_flush_cache","gas":400068073,"percentage":86.9501631634506,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"storage_load_bytes32","gas":42136960,"percentage":9.15798034004026,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"emit_log","gas":17649734,"percentage":3.835965313561779,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"native_keccak256","gas":121800,"percentage":0.026471819642824343,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"write_result","gas":41162,"percentage":0.008946084073382066,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"storage_cache_bytes32","gas":36960,"percentage":0.008032828029546697,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"read_args","gas":13560,"percentage":0.0029471089848661586,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_value","gas":13440,"percentage":0.0029210283743806176,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_sender","gas":13440,"percentage":0.0029210283743806176,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"msg_reentrant","gas":8400,"percentage":0.0018256427339878856,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"pay_for_memory_grow","gas":8400,"percentage":0.0018256427339878856,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"user_returned","gas":0,"percentage":0.0,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}},{"stack":"user_entrypoint","gas":0,"percentage":0.0,"source_hint":{"file":"unknown","line":null,"column":null,"function":"0x0"}}],"all_stacks":[{"stack":"storage_flush_cache","weight":400068073,"last_pc":0},{"stack":"storage_load_bytes32","weight":42136960,"last_pc":0},{"stack":"emit_log","weight":17649734,"last_pc":0},{"stack":"native_keccak256","weight":121800,"last_pc":0},{"stack":"write_result","weight":41162,"last_pc":0},{"stack":"storage_cache_bytes32","weight":36960,"last_pc":0},{"stack":"read_args","weight":13560,"last_pc":0},{"stack":"msg_value","weight":13440,"last_pc":0},{"stack":"msg_sender","weight":13440,"last_pc":0},{"stack":"msg_reentrant","weight":8400,"last_pc":0},{"stack":"pay_for_memory_grow","weight":8400,"last_pc":0},{"stack":"user_returned","weight":0,"last_pc":0},{"stack":"user_entrypoint","weight":0,"last_pc":0}],"generated_at":"2026-02-19T00:39:29.748484086+00:00"}
     </script>
     <script id="profile-b-data" type="application/json">
         /* PROFILE_B_DATA_JSON */
@@ -558,7 +562,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (window.app.profileB) {
         document.getElementById('chart-b').classList.remove('hidden');
-        document.getElementById('toggle-diff').classList.remove('hidden');
         window.app.chartB = new PieChart('canvas-b', window.app.profileB, true);
     }
 });
@@ -635,14 +638,18 @@ function setupControls() {
 function updateUI() {
     const profA = window.app.profileA;
     const profB = window.app.profileB;
-    const diff = window.app.diff;
 
     // Hashes
     document.getElementById('hash-a').textContent = profA.transaction_hash;
     if (profB) {
         document.getElementById('hash-b').textContent = profB.transaction_hash;
+        document.getElementById('gas-label').textContent = 'GAS_DELTA:';
+        document.getElementById('hostio-label').textContent = 'HOST_IO_DELTA:';
     } else {
-        document.querySelector('.tx-item.target').classList.add('hidden');
+        const targetTx = document.querySelector('.tx-item.target');
+        if (targetTx) targetTx.classList.add('hidden');
+        document.getElementById('gas-label').textContent = 'TOTAL_GAS:';
+        document.getElementById('hostio-label').textContent = 'HOST_IO_CALLS:';
     }
 
     // Delta Stats Helper
@@ -651,7 +658,7 @@ function updateUI() {
         const pct = v1 === 0 ? (v2 > 0 ? 100 : 0) : (diff / v1) * 100;
         const sign = diff > 0 ? '+' : '';
         const cls = diff > 0 ? 'pos' : (diff < 0 ? 'neg' : 'neutral');
-        return `${v1} -> ${v2} <span class="delta ${cls}">(${sign}${pct.toFixed(2)}%)</span>`;
+        return `${v1.toLocaleString()} -> ${v2.toLocaleString()} <span class="delta ${cls}">(${sign}${pct.toFixed(2)}%)</span>`;
     };
 
     // Gas Delta
@@ -674,7 +681,7 @@ function updateUI() {
 
     // Footer
     const profileName = profB ? 
-        `${profA.transaction_hash.slice(0, 8)} vs ${profB.transaction_hash.slice(0, 8)}` : 
+        `${profA.transaction_hash.slice(0, 8)}... vs ${profB.transaction_hash.slice(0, 8)}...` : 
         profA.transaction_hash.slice(0, 10) + '...';
     document.getElementById('profile-name').textContent = profileName;
 
@@ -682,9 +689,19 @@ function updateUI() {
     const hotPathsList = document.getElementById('hot-paths-list');
     hotPathsList.innerHTML = '';
     
-    // If it's a diff, we use metrics from the diff report if possible, or just calculate deltas
-    const pathsToShow = profB ? profB.hot_paths : profA.hot_paths;
+    let pathsToShow = profB ? [...profB.hot_paths] : [...profA.hot_paths];
     
+    // sorting logic
+    if (profB) {
+        pathsToShow.sort((a, b) => {
+            const pathA_in_A = profA.hot_paths.find(p => p.stack === a.stack);
+            const pathB_in_A = profA.hot_paths.find(p => p.stack === b.stack);
+            const diffA = a.gas - (pathA_in_A ? pathA_in_A.gas : 0);
+            const diffB = b.gas - (pathB_in_A ? pathB_in_A.gas : 0);
+            return Math.abs(diffB) - Math.abs(diffA); // Sort by largest change magnitude
+        });
+    }
+
     if (pathsToShow) {
         pathsToShow.slice(0, 10).forEach(path => {
             const li = document.createElement('li');
@@ -693,8 +710,8 @@ function updateUI() {
             li.id = `path-${name}`;
             
             let deltaDisplay = '';
+            let rightSide = '';
             if (profB) {
-                // Find matching path in A
                 const pathA = profA.hot_paths.find(p => p.stack === path.stack);
                 const gasA = pathA ? pathA.gas : 0;
                 const gasDiff = path.gas - gasA;
@@ -702,14 +719,16 @@ function updateUI() {
                 const sign = gasDiff > 0 ? '+' : '';
                 const cls = gasDiff > 0 ? 'pos' : (gasDiff < 0 ? 'neg' : 'neutral');
                 deltaDisplay = `<span class="delta ${cls}">${sign}${gasPct.toFixed(2)}%</span>`;
+                rightSide = ''; // Don't show gas in hot path for diff
             } else {
                 deltaDisplay = `<span>[${path.percentage.toFixed(1)}%]</span>`;
+                rightSide = `<span style="opacity: 0.6;">${(path.gas / 1000).toFixed(0)}k gas</span>`;
             }
 
             li.innerHTML = `
                 <div style="display:flex;justify-content:space-between;">
                     ${deltaDisplay}
-                    <span style="opacity: 0.6;">${(path.gas / 1000).toFixed(0)}k gas</span>
+                    ${rightSide}
                 </div>
                 <span class="stack-name">> ${name}</span>
             `;

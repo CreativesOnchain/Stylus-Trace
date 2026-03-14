@@ -130,7 +130,12 @@ main { display: flex; flex: 1; overflow: hidden; }
 }
 .stat-row .label { font-size: 16px; color: #fff; opacity: 0.8; margin-bottom: 4px; }
 .stat-row .value { font-size: 20px; color: var(--green-main); }
-.stat-row .delta { margin-left: 10px; font-weight: bold; }
+.stat-row .delta { 
+    margin-left: 10px; 
+    font-weight: bold; 
+    font-size: 22px;
+    letter-spacing: 1px;
+}
 .stat-row .delta.pos { color: #ff4d4d; }
 .stat-row .delta.neg { color: #00ff41; }
 .stat-row .delta.neutral { color: #888; }

@@ -279,7 +279,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     if (window.app.profileB) {
         document.getElementById('chart-b').classList.remove('hidden');
-        document.getElementById('toggle-diff').classList.remove('hidden');
         window.app.chartB = new PieChart('canvas-b', window.app.profileB, true);
     }
 });
@@ -356,14 +355,18 @@ function setupControls() {
 function updateUI() {
     const profA = window.app.profileA;
     const profB = window.app.profileB;
-    const diff = window.app.diff;
 
     // Hashes
     document.getElementById('hash-a').textContent = profA.transaction_hash;
     if (profB) {
         document.getElementById('hash-b').textContent = profB.transaction_hash;
+        document.getElementById('gas-label').textContent = 'GAS_DELTA:';
+        document.getElementById('hostio-label').textContent = 'HOST_IO_DELTA:';
     } else {
-        document.querySelector('.tx-item.target').classList.add('hidden');
+        const targetTx = document.querySelector('.tx-item.target');
+        if (targetTx) targetTx.classList.add('hidden');
+        document.getElementById('gas-label').textContent = 'TOTAL_GAS:';
+        document.getElementById('hostio-label').textContent = 'HOST_IO_CALLS:';
     }
 
     // Delta Stats Helper
@@ -372,7 +375,7 @@ function updateUI() {
         const pct = v1 === 0 ? (v2 > 0 ? 100 : 0) : (diff / v1) * 100;
         const sign = diff > 0 ? '+' : '';
         const cls = diff > 0 ? 'pos' : (diff < 0 ? 'neg' : 'neutral');
-        return `${v1} -> ${v2} <span class="delta ${cls}">(${sign}${pct.toFixed(2)}%)</span>`;
+        return `${v1.toLocaleString()} -> ${v2.toLocaleString()} <span class="delta ${cls}">(${sign}${pct.toFixed(2)}%)</span>`;
     };
 
     // Gas Delta
@@ -395,7 +398,7 @@ function updateUI() {
 
     // Footer
     const profileName = profB ? 
-        `${profA.transaction_hash.slice(0, 8)} vs ${profB.transaction_hash.slice(0, 8)}` : 
+        `${profA.transaction_hash.slice(0, 8)}... vs ${profB.transaction_hash.slice(0, 8)}...` : 
         profA.transaction_hash.slice(0, 10) + '...';
     document.getElementById('profile-name').textContent = profileName;
 
@@ -403,9 +406,19 @@ function updateUI() {
     const hotPathsList = document.getElementById('hot-paths-list');
     hotPathsList.innerHTML = '';
     
-    // If it's a diff, we use metrics from the diff report if possible, or just calculate deltas
-    const pathsToShow = profB ? profB.hot_paths : profA.hot_paths;
+    let pathsToShow = profB ? [...profB.hot_paths] : [...profA.hot_paths];
     
+    // sorting logic
+    if (profB) {
+        pathsToShow.sort((a, b) => {
+            const pathA_in_A = profA.hot_paths.find(p => p.stack === a.stack);
+            const pathB_in_A = profA.hot_paths.find(p => p.stack === b.stack);
+            const diffA = a.gas - (pathA_in_A ? pathA_in_A.gas : 0);
+            const diffB = b.gas - (pathB_in_A ? pathB_in_A.gas : 0);
+            return Math.abs(diffB) - Math.abs(diffA); // Sort by largest change magnitude
+        });
+    }
+
     if (pathsToShow) {
         pathsToShow.slice(0, 10).forEach(path => {
             const li = document.createElement('li');
@@ -414,8 +427,8 @@ function updateUI() {
             li.id = `path-${name}`;
             
             let deltaDisplay = '';
+            let rightSide = '';
             if (profB) {
-                // Find matching path in A
                 const pathA = profA.hot_paths.find(p => p.stack === path.stack);
                 const gasA = pathA ? pathA.gas : 0;
                 const gasDiff = path.gas - gasA;
@@ -423,14 +436,16 @@ function updateUI() {
                 const sign = gasDiff > 0 ? '+' : '';
                 const cls = gasDiff > 0 ? 'pos' : (gasDiff < 0 ? 'neg' : 'neutral');
                 deltaDisplay = `<span class="delta ${cls}">${sign}${gasPct.toFixed(2)}%</span>`;
+                rightSide = ''; // Don't show gas in hot path for diff
             } else {
                 deltaDisplay = `<span>[${path.percentage.toFixed(1)}%]</span>`;
+                rightSide = `<span style="opacity: 0.6;">${(path.gas / 1000).toFixed(0)}k gas</span>`;
             }
 
             li.innerHTML = `
                 <div style="display:flex;justify-content:space-between;">
                     ${deltaDisplay}
-                    <span style="opacity: 0.6;">${(path.gas / 1000).toFixed(0)}k gas</span>
+                    ${rightSide}
                 </div>
                 <span class="stack-name">> ${name}</span>
             `;

@@ -23,7 +23,6 @@
                 <button id="zoom-in">[ + ]</button>
                 <button id="zoom-out">[ - ]</button>
                 <button id="reset-view">[ RESET ]</button>
-                <button id="toggle-diff" class="hidden">[ DIFF ]</button>
             </div>
         </header>
 
@@ -41,11 +40,11 @@
                     </div>
                     <div class="stats-column">
                         <div class="stat-row">
-                            <div class="label">GAS_DELTA:</div>
+                            <div class="label" id="gas-label">TOTAL_GAS:</div>
                             <div class="value" id="gas-delta">-</div>
                         </div>
                         <div class="stat-row">
-                            <div class="label">HOST_IO_DELTA:</div>
+                            <div class="label" id="hostio-label">HOST_IO_CALLS:</div>
                             <div class="value" id="hostio-delta">-</div>
                         </div>
                     </div>
