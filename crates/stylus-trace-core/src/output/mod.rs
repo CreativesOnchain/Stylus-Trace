@@ -7,10 +7,12 @@
 
 pub mod json;
 pub mod svg;
+pub mod viewer;
 
 // Re-export main functions
 pub use json::{read_profile, write_profile};
 pub use svg::write_svg;
+pub use viewer::{generate_diff_viewer, generate_viewer, open_browser};
 
 use crate::utils::error::OutputError;
 use std::path::Path;

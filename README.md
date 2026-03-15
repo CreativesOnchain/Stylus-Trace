@@ -10,10 +10,10 @@ Stylus Trace turns opaque Stylus transaction traces into **interactive flamegrap
 
 ## 🚀 Key Features
 
-- **Interactive Flamegraphs**: Visualize execution paths with interactive SVG snapshots.
+- **Interactive Web Viewer**: Explore transactions in a high-intensity "Cyber Diagnostics" terminal with real-time symbol search and magnitude-sorted deltas.
 - **Optimization Insights**: Get qualitative feedback on loop redundancies, high-cost storage access, and potential caching opportunities.
 - **Gas & Ink Analysis**: Seamlessly toggle between standard Gas and high-precision Stylus Ink (10,000x) units.
-- **Transaction Dashboards**: Get a "hot path" summary directly in your terminal.
+- **Side-by-Side Diffing**: Compare two profiles visually to hunt down regressions or verify optimizations.
 - **Automated Artifacts**: Built-in organization for profiles and graphs in a dedicated `artifacts/` folder.
 - **Arbitrum Native**: Designed specifically for the Arbitrum Nitro/Stylus execution environment.
 
@@ -81,23 +81,20 @@ stylus-trace capture \
 --flamegraph <anything.svg> \
 --summary
 
-OR
-
-# This will generate output as profile.json but no flamegraph in artifacts directory
-stylus-trace capture --tx <TX_HASH> --summary
+# Profile and immediately launch the Cyber Viewer
+stylus-trace capture --tx <TX_HASH> --view
 
 OR
-# this will generate output as profile.json and flamegraph.svg in artifacts directory
-stylus-trace capture \
---tx <TX_HASH> \
---flamegraph \
---summary
+
+# Generate output as profile.json and interactive flamegraph
+stylus-trace capture --tx <TX_HASH> --flamegraph --summary
 
 ```
 
 **What happens?**
 - `artifacts/profile.json`: A detailed data structure of your transaction.
-- `artifacts/flamegraph.svg`: An interactive SVG you can open in any browser.
+- `artifacts/viewer.html`: A self-contained, high-performance web viewer.
+- `artifacts/flamegraph.svg`: A classic interactive SVG snapshot.
 - **Terminal Output**: A high-level summary of the hottest paths.
 
 ---
@@ -139,6 +136,14 @@ This feature will be enabled automatically once upstream tracer support is avail
 | `--summary` | Print human-readable summary to terminal | `true` |
 | `--output` | Path to write the diff report JSON | `artifacts/diff/diff_report.json` |
 | `--flamegraph` | Path to write visual diff flamegraph SVG | `artifacts/diff/diff.svg` |
+| `--view` | Open the interactive comparison viewer | `false` |
+
+### `view`
+
+| Flag       | Description                                 | Default |
+|------------|---------------------------------------------|---------|
+| `--target` | **(Required)** Path to profile JSON to view | -       |
+| `--baseline` | Optional baseline profile JSON for comparison| -       |
 
 ### `ci init`
 | Flag | Description | Default |

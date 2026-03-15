@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stylus Trace Studio - Cyber Diagnostics</title>
+    <link rel="stylesheet" href="viewer.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="crt-overlay"></div>
+    <div id="app">
+        <header class="terminal-header">
+            <div class="logo">
+                <span class="glitch" data-text="STYLUS_TRACE // VIEWER">STYLUS_TRACE // VIEWER</span>
+            </div>
+            <div class="search-bar">
+                <div class="search-wrapper">
+                    <input type="text" id="search-input" spellcheck="false" autocomplete="off">
+                    <div id="search-ghost"></div>
+                </div>
+            </div>
+            <div class="controls">
+                <button id="zoom-in">[ + ]</button>
+                <button id="zoom-out">[ - ]</button>
+                <button id="reset-view">[ RESET ]</button>
+            </div>
+        </header>
+
+        <main>
+            <aside id="sidebar">
+                <section class="tx-info panel">
+                    <h2>:: DIAGNOSTICS ::</h2>
+                    <div id="tx-hashes" class="tx-list">
+                        <div class="tx-item baseline">
+                            <label>B_LINE:</label> <span class="hash" id="hash-a">0x...</span>
+                        </div>
+                        <div class="tx-item target">
+                            <label>TARGET:</label> <span class="hash" id="hash-b">0x...</span>
+                        </div>
+                    </div>
+                    <div class="stats-column">
+                        <div class="stat-row">
+                            <div class="label" id="gas-label">TOTAL_GAS:</div>
+                            <div class="value" id="gas-delta">-</div>
+                        </div>
+                        <div class="stat-row">
+                            <div class="label" id="hostio-label">HOST_IO_CALLS:</div>
+                            <div class="value" id="hostio-delta">-</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="hot-paths panel">
+                    <h2>:: HOT_PATHS ::</h2>
+                    <ul id="hot-paths-list">
+                        <!-- Populated by JS -->
+                    </ul>
+                </section>
+            </aside>
+
+            <div id="viewer-container">
+                <div id="chart-a" class="chart-canvas">
+                    <canvas id="canvas-a"></canvas>
+                    <div class="label">> BASELINE_DATA</div>
+                </div>
+                <div id="chart-b" class="chart-canvas hidden">
+                    <canvas id="canvas-b"></canvas>
+                    <div class="label">> TARGET_DATA</div>
+                </div>
+                <div id="tooltip"></div>
+            </div>
+        </main>
+
+        <footer class="terminal-footer">
+            <div id="status-line">> SYSTEM: ONLINE | PROFILE: <span id="profile-name">none</span></div>
+        </footer>
+    </div>
+
+    <!-- Data Injection Point -->
+    <script id="profile-data" type="application/json">
+        /* PROFILE_DATA_JSON */
+    </script>
+    <script id="profile-b-data" type="application/json">
+        /* PROFILE_B_DATA_JSON */
+    </script>
+    <script id="diff-data" type="application/json">
+        /* DIFF_DATA_JSON */
+    </script>
+
+    <script src="viewer.js"></script>
+</body>
+</html>
