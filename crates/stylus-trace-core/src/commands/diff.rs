@@ -126,12 +126,19 @@ pub fn execute_diff(args: DiffArgs) -> Result<()> {
 
     if args.view {
         info!("Generating interactive side-by-side diff viewer...");
-        let viewer_path = args.output.clone()
+        let viewer_path = args
+            .output
+            .clone()
             .unwrap_or_else(|| args.target.with_extension("diff.html"))
             .with_extension("html");
-        
+
         let report_json = serde_json::to_value(&report)?;
-        crate::output::viewer::generate_diff_viewer(&baseline, &target, &report_json, &viewer_path)?;
+        crate::output::viewer::generate_diff_viewer(
+            &baseline,
+            &target,
+            &report_json,
+            &viewer_path,
+        )?;
         info!("✓ Diff viewer generated at: {}", viewer_path.display());
         crate::output::viewer::open_browser(&viewer_path)?;
     }

@@ -13,9 +13,9 @@ use stylus_trace_core::commands::{
     display_schema, display_version, execute_capture, validate_args, validate_profile_file,
     CaptureArgs,
 };
+use stylus_trace_core::flamegraph::FlamegraphConfig;
 use stylus_trace_core::output::json::read_profile;
 use stylus_trace_core::output::viewer::{generate_viewer, open_browser};
-use stylus_trace_core::flamegraph::FlamegraphConfig;
 
 /// Stylus Trace Studio - Performance profiling for Arbitrum Stylus
 #[derive(Parser, Debug)]
@@ -350,9 +350,9 @@ fn handle_diff(args: &DiffSubArgs) -> Result<()> {
 /// Handle the view command logic
 fn handle_view(tx_or_path: &str, rpc: &str) -> Result<()> {
     let path = PathBuf::from(tx_or_path);
-    
+
     // Check if it's an existing JSON file
-    if path.exists() && path.extension().map_or(false, |ext| ext == "json") {
+    if path.exists() && path.extension().is_some_and(|ext| ext == "json") {
         info!("Opening existing profile: {}", path.display());
         let profile = read_profile(&path).context("Failed to read profile JSON")?;
         let viewer_path = path.with_extension("html");
@@ -372,7 +372,7 @@ fn handle_view(tx_or_path: &str, rpc: &str) -> Result<()> {
     } else {
         anyhow::bail!("Invalid input: provide a path to a .json profile or a 0x transaction hash");
     }
-    
+
     Ok(())
 }
 
