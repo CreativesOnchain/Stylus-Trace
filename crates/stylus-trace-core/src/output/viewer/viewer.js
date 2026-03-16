@@ -160,7 +160,6 @@ class PieChart {
 
         if (hit !== this.hoveredSlice) {
             this.hoveredSlice = hit;
-            this.updateTooltip(screenX, screenY);
             this.render();
             document.querySelectorAll('.hot-path-item').forEach(el => el.classList.remove('highlight'));
             if (hit && hit.name !== 'Other') {
@@ -168,14 +167,15 @@ class PieChart {
                 if (el) el.classList.add('highlight');
             }
         }
+        this.updateTooltip(screenX, screenY);
     }
 
     updateTooltip(x, y) {
         const tooltip = document.getElementById('tooltip');
         if (this.hoveredSlice) {
             tooltip.style.display = 'block';
-            // tooltip.style.left = (x + 0) + 'px';
-            // tooltip.style.top = (y + 0) + 'px';
+            tooltip.style.left = (x + 15) + 'px';
+            tooltip.style.top = (y + 15) + 'px';
             tooltip.innerHTML = `
                 <div style="font-size: 24px; color: #fff; text-shadow: none;">>${this.hoveredSlice.name}</div>
                 <div style="margin-top: 10px;">
