@@ -145,12 +145,12 @@ fn render_hot_path_comparison_table(report: &DiffReport) -> String {
             format!("{:<38}", display_stack)
         };
 
-        // Scale to Gas (ink / 10,000)
-        let baseline_gas = hp.baseline_gas / 10_000;
-        let target_gas = hp.target_gas / 10_000;
+        // Scale to Gas (ink / 10,000) with float precision
+        let baseline_gas = hp.baseline_gas as f64 / 10_000.0;
+        let target_gas = hp.target_gas as f64 / 10_000.0;
 
         out.push_str(&format!(
-            "  ┃ {} ┃ {:>12} ┃ {:>12} ┃ {}{:>9.2}%{} ┃\n",
+            "  ┃ {} ┃ {:>12.1} ┃ {:>12.1} ┃ {}{:>9.2}%{} ┃\n",
             display_stack_fixed, baseline_gas, target_gas, delta_color, hp.percent_change, reset
         ));
     }

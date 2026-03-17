@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use stylus_trace_core::output::validate_path;
 use stylus_trace_core::output::{read_profile, write_profile, write_svg};
-use stylus_trace_core::parser::schema::{HostIoSummary, HotPath, Profile};
+use stylus_trace_core::parser::schema::{GasCategory, HostIoSummary, HotPath, Profile};
 use tempfile::NamedTempFile;
 
 fn create_test_profile() -> Profile {
@@ -19,6 +19,7 @@ fn create_test_profile() -> Profile {
             stack: "main;execute".to_string(),
             gas: 50000,
             percentage: 50.0,
+            category: GasCategory::UserCode,
             source_hint: None,
         }],
         all_stacks: None,

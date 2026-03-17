@@ -11,6 +11,14 @@
 </head>
 <body>
     <div class="crt-overlay"></div>
+    <div id="drop-zone-container" class="hidden">
+        <div class="drop-zone">
+            <div class="glitch" data-text="AWAITING // TRACE_DATA">AWAITING // TRACE_DATA</div>
+            <p>DRAG &amp; DROP REPORT.JSON</p>
+            <p class="subtext">Drop 1 file for Profiling | Drop 2 files for Diffing</p>
+            <input type="file" id="file-input" class="hidden" accept=".json" multiple>
+        </div>
+    </div>
     <div id="app">
         <header class="terminal-header">
             <div class="logo">
@@ -26,8 +34,15 @@
                 <button id="zoom-in">[ + ]</button>
                 <button id="zoom-out">[ - ]</button>
                 <button id="reset-view">[ RESET ]</button>
+                <button id="theme-toggle">[ LIGHT ]</button>
             </div>
         </header>
+
+        <!-- View Tab Switcher -->
+        <div id="view-tabs">
+            <button id="tab-pie" class="tab-btn active">[ PIE_CHART ]</button>
+            <button id="tab-flame" class="tab-btn">[ FLAMEGRAPH ]</button>
+        </div>
 
         <main>
             <aside id="sidebar">
@@ -59,36 +74,46 @@
                         <!-- Populated by JS -->
                     </ul>
                 </section>
+
+                <section id="category-stats" class="panel">
+                    <h2>:: GAS_BY_CATEGORY ::</h2>
+                    <ul id="category-stats-list">
+                        <!-- Populated by JS -->
+                    </ul>
+                </section>
             </aside>
 
+            <!-- Pie Chart View -->
             <div id="viewer-container">
                 <div id="chart-a" class="chart-canvas">
                     <canvas id="canvas-a"></canvas>
-                    <div class="label">> BASELINE_DATA</div>
+                    <div class="label">&gt; BASELINE_DATA</div>
                 </div>
                 <div id="chart-b" class="chart-canvas hidden">
                     <canvas id="canvas-b"></canvas>
-                    <div class="label">> TARGET_DATA</div>
+                    <div class="label">&gt; TARGET_DATA</div>
                 </div>
                 <div id="tooltip"></div>
+            </div>
+
+            <!-- Flamegraph View -->
+            <div id="flamegraph-view" class="hidden">
+                <div id="flamegraph-container"></div>
+                <div id="flamegraph-empty" class="flamegraph-empty hidden">&gt; NO_FLAMEGRAPH_DATA // Profile with --output-svg flag to generate one</div>
             </div>
         </main>
 
         <footer class="terminal-footer">
-            <div id="status-line">> SYSTEM: ONLINE | PROFILE: <span id="profile-name">none</span></div>
+            <div id="status-line">&gt; SYSTEM: ONLINE | PROFILE: <span id="profile-name">none</span></div>
         </footer>
     </div>
 
-    <!-- Data Injection Point -->
-    <script id="profile-data" type="application/json">
-        /* PROFILE_DATA_JSON */
-    </script>
-    <script id="profile-b-data" type="application/json">
-        /* PROFILE_B_DATA_JSON */
-    </script>
-    <script id="diff-data" type="application/json">
-        /* DIFF_DATA_JSON */
-    </script>
+    <!-- Data Injection Point (base64-encoded JSON for safe injection) -->
+    <script id="profile-data" type="application/json">/* PROFILE_DATA_B64 */</script>
+    <script id="profile-b-data" type="application/json">/* PROFILE_B_DATA_B64 */</script>
+    <script id="diff-data" type="application/json">/* DIFF_DATA_B64 */</script>
+    <!-- Flamegraph SVG (injected as raw text) -->
+    <script id="flamegraph-svg-data" type="text/plain">/* FLAMEGRAPH_SVG */</script>
 
     <script src="viewer.js"></script>
 </body>

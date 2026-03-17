@@ -34,6 +34,7 @@ object = { version = "0.32", features = ["wasm"] }
 gimli = "0.28"
 tempfile = "3.10"
 pretty_assertions = "1.4"
+base64 = "0.22"
 
 [profile.release]
 opt-level = 3

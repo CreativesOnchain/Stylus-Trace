@@ -191,7 +191,11 @@ pub fn execute_capture(args: CaptureArgs) -> Result<()> {
             Some(stacks.to_vec()),
             mapper.as_ref(),
         );
-        crate::output::viewer::generate_viewer(&profile, &viewer_path)?;
+        // Generate SVG for the flamegraph tab in the viewer.
+        // We attempt this even if --output-svg was not requested; failure is non-fatal.
+        let viewer_svg =
+            generate_flamegraph(&stacks, args.flamegraph_config.as_ref(), mapper.as_ref()).ok();
+        crate::output::viewer::generate_viewer(&profile, viewer_svg.as_deref(), &viewer_path)?;
         info!("✓ Viewer generated at: {}", viewer_path.display());
         crate::output::viewer::open_browser(&viewer_path)?;
     }

@@ -16,6 +16,11 @@ const CONFIG = {
     }
 };
 
+/** Helper to get CSS variables for Canvas rendering */
+function getThemeColor(varName) {
+    return getComputedStyle(document.body).getPropertyValue(varName).trim();
+}
+
 class PieChart {
     constructor(canvasId, data, isDiff = false) {
         this.canvas = document.getElementById(canvasId);
@@ -49,7 +54,9 @@ class PieChart {
 
         this.data.hot_paths.slice(0, 15).forEach(path => {
             let name = path.stack.split(';').pop();
-            const category = this.getCategory(name);
+            // Prefer server-provided category; fall back to legacy heuristic
+            // for profiles generated before this feature was added.
+            const category = path.category || this.getCategory(name);
             this.slices.push({
                 name: name,
                 fullStack: path.stack,
@@ -160,7 +167,6 @@ class PieChart {
 
         if (hit !== this.hoveredSlice) {
             this.hoveredSlice = hit;
-            this.updateTooltip(screenX, screenY);
             this.render();
             document.querySelectorAll('.hot-path-item').forEach(el => el.classList.remove('highlight'));
             if (hit && hit.name !== 'Other') {
@@ -168,17 +174,18 @@ class PieChart {
                 if (el) el.classList.add('highlight');
             }
         }
+        this.updateTooltip(screenX, screenY);
     }
 
     updateTooltip(x, y) {
         const tooltip = document.getElementById('tooltip');
         if (this.hoveredSlice) {
             tooltip.style.display = 'block';
-            // tooltip.style.left = (x + 0) + 'px';
-            // tooltip.style.top = (y + 0) + 'px';
+            tooltip.style.left = (x + 15) + 'px';
+            tooltip.style.top = (y + 15) + 'px';
             tooltip.innerHTML = `
-                <div style="font-size: 24px; color: #fff; text-shadow: none;">>${this.hoveredSlice.name}</div>
-                <div style="margin-top: 10px;">
+                <div style="font-size: 24px; color: var(--text-bright); text-shadow: none;">>${this.hoveredSlice.name}</div>
+                <div style="margin-top: 10px; color: var(--green-main);">
                     <div>GAS_USED: ${this.hoveredSlice.value.toLocaleString()}</div>
                     <div>SHARE:    ${this.hoveredSlice.percentage.toFixed(2)}%</div>
                 </div>
@@ -217,10 +224,10 @@ class PieChart {
                 isHighlighted = (sliceName === query) || (query.length >= 3 && sliceName.startsWith(query));
             }
 
-            if (isHighlighted) this.ctx.fillStyle = '#ffffff';
+            if (isHighlighted) this.ctx.fillStyle = getThemeColor('--text-bright') || '#ffffff';
 
             this.ctx.fill();
-            this.ctx.strokeStyle = '#000000';
+            this.ctx.strokeStyle = getThemeColor('--bg-color') || '#000000';
             this.ctx.lineWidth = 2 / this.zoom;
             this.ctx.stroke();
 
@@ -228,7 +235,7 @@ class PieChart {
             if (slice.percentage > 3 && this.zoom > 0.5) {
                 let textX = Math.cos(midAngle) * (radius * 0.7);
                 let textY = Math.sin(midAngle) * (radius * 0.7);
-                this.ctx.fillStyle = '#000';
+                this.ctx.fillStyle = '#000'; // Keep black for readability on colored slices
                 this.ctx.font = `${Math.max(12, 16 / this.zoom)}px 'VT323'`;
                 this.ctx.textAlign = 'center';
                 this.ctx.textBaseline = 'middle';
@@ -238,20 +245,23 @@ class PieChart {
 
         this.ctx.restore();
 
+        const greenMain = getThemeColor('--green-main');
         this.ctx.beginPath();
         this.ctx.arc(width / 2, height / 2, 5, 0, Math.PI * 2);
-        this.ctx.fillStyle = '#00ff41';
+        this.ctx.fillStyle = greenMain;
         this.ctx.fill();
         this.ctx.beginPath();
         this.ctx.moveTo(width / 2 - 20, height / 2);
         this.ctx.lineTo(width / 2 + 20, height / 2);
         this.ctx.moveTo(width / 2, height / 2 - 20);
         this.ctx.lineTo(width / 2, height / 2 + 20);
-        this.ctx.strokeStyle = '#00ff41';
+        this.ctx.strokeStyle = greenMain;
         this.ctx.lineWidth = 1;
         this.ctx.stroke();
     }
 
+    /** @deprecated Use `path.category` from the JSON profile instead.
+     * Kept as a fallback for old profiles that lack the `category` field. */
     getCategory(name) {
         const n = name.toLowerCase();
         if (n === 'root') return 'Root';
@@ -278,30 +288,219 @@ window.app = {
 
 document.addEventListener('DOMContentLoaded', () => {
     loadData();
-    setupControls();
+
+    // Check if we correctly loaded data statically
     if (window.app.profileA) {
-        updateUI();
+        initViewer();
+    } else {
+        // No static data, show the drag-and-drop zone
+        const appContainer = document.getElementById('app');
+        const dropZoneContainer = document.getElementById('drop-zone-container');
+        if (appContainer && dropZoneContainer) {
+            appContainer.classList.add('hidden');
+            dropZoneContainer.classList.remove('hidden');
+            setupDropZone();
+        }
+    }
+});
+
+function initViewer() {
+    const dropZoneContainer = document.getElementById('drop-zone-container');
+    const appContainer = document.getElementById('app');
+    if (dropZoneContainer && appContainer) {
+        dropZoneContainer.classList.add('hidden');
+        appContainer.classList.remove('hidden');
+    }
+
+    setupControls();
+    setupTabs();
+    setupThemeToggle();
+    updateUI();
+    if (window.app.profileA) {
         window.app.chartA = new PieChart('canvas-a', window.app.profileA);
     }
     if (window.app.profileB) {
         document.getElementById('chart-b').classList.remove('hidden');
         window.app.chartB = new PieChart('canvas-b', window.app.profileB, true);
     }
-});
+    renderFlamegraph();
+}
+
+function setupThemeToggle() {
+    const btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+
+    // Restore persisted preference
+    const saved = localStorage.getItem('stylus-trace-theme');
+    if (saved === 'light') {
+        document.body.setAttribute('data-theme', 'light');
+        btn.textContent = '[ DARK ]';
+    }
+
+    btn.addEventListener('click', () => {
+        const isLight = document.body.getAttribute('data-theme') === 'light';
+        if (isLight) {
+            document.body.removeAttribute('data-theme');
+            btn.textContent = '[ LIGHT ]';
+            localStorage.setItem('stylus-trace-theme', 'dark');
+        } else {
+            document.body.setAttribute('data-theme', 'light');
+            btn.textContent = '[ DARK ]';
+            localStorage.setItem('stylus-trace-theme', 'light');
+        }
+        // Re-render charts — canvas doesn't pick up CSS variable changes automatically
+        if (window.app.chartA) window.app.chartA.render();
+        if (window.app.chartB) window.app.chartB.render();
+    });
+}
+
+function setupDropZone() {
+    const dropZoneCtn = document.getElementById('drop-zone-container');
+    const dropZone = dropZoneCtn.querySelector('.drop-zone');
+    const fileInput = document.getElementById('file-input');
+
+    dropZone.addEventListener('click', () => fileInput.click());
+    
+    dropZone.addEventListener('dragover', (e) => { 
+        e.preventDefault(); 
+        dropZone.classList.add('dragover'); 
+    });
+    
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('dragover');
+    });
+    
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+    });
+    
+    fileInput.addEventListener('change', (e) => {
+        handleFiles(e.target.files);
+    });
+}
+
+function handleFiles(files) {
+    if (files.length === 0) return;
+    
+    const fileA = files[0];
+    const fileB = files.length > 1 ? files[1] : null;
+
+    const readJson = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    resolve(JSON.parse(e.target.result));
+                } catch (err) {
+                    reject(err);
+                }
+            };
+            reader.onerror = reject;
+            reader.readAsText(file);
+        });
+    };
+
+    if (fileB) {
+        Promise.all([readJson(fileA), readJson(fileB)]).then(results => {
+            window.app.profileA = results[0];
+            window.app.profileB = results[1];
+            initViewer();
+        }).catch(err => {
+            alert('Error parsing JSON files: ' + err.message);
+        });
+    } else {
+        readJson(fileA).then(result => {
+            window.app.profileA = result;
+            window.app.profileB = null;
+            document.getElementById('chart-b').classList.add('hidden');
+            if (window.app.chartA) window.app.chartA = null;
+            if (window.app.chartB) window.app.chartB = null;
+            initViewer();
+        }).catch(err => {
+            alert('Error parsing JSON file: ' + err.message);
+        });
+    }
+}
+
 
 function loadData() {
     try {
+        /** Decode a base64-encoded JSON blob injected by the Rust backend.
+         * Falls back silently for empty or placeholder values. */
         const getJson = id => {
             const el = document.getElementById(id);
             if (!el) return null;
             const text = el.textContent.trim();
-            return (text && !text.startsWith('/*')) ? JSON.parse(text) : null;
+            if (!text || text.startsWith('/*')) return null;
+            try {
+                return JSON.parse(atob(text));
+            } catch (_) {
+                // Attempt raw JSON parse for drag-and-drop files loaded via handleFiles()
+                return JSON.parse(text);
+            }
         };
         window.app.profileA = getJson('profile-data');
         window.app.profileB = getJson('profile-b-data');
-        window.app.diff = getJson('diff-data');
+        window.app.diffData = getJson('diff-data');
+
+        // Load flamegraph SVG (not base64, injected as raw SVG text)
+        const svgEl = document.getElementById('flamegraph-svg-data');
+        if (svgEl) {
+            const svgText = svgEl.textContent.trim();
+            window.app.flamegraphSvg = (svgText && !svgText.startsWith('/*')) ? svgText : null;
+        }
     } catch (e) {
         console.error('Data loading error', e);
+    }
+}
+
+function setupTabs() {
+    const tabPie   = document.getElementById('tab-pie');
+    const tabFlame = document.getElementById('tab-flame');
+    const viewerContainer  = document.getElementById('viewer-container');
+    const flamegraphView   = document.getElementById('flamegraph-view');
+
+    if (!tabPie || !tabFlame) return;
+
+    tabPie.addEventListener('click', () => {
+        tabPie.classList.add('active');
+        tabFlame.classList.remove('active');
+        viewerContainer.classList.remove('hidden');
+        flamegraphView.classList.add('hidden');
+        // Resize charts to ensure they repaint correctly after being shown
+        if (window.app.chartA) window.app.chartA.resize();
+        if (window.app.chartB) window.app.chartB.resize();
+    });
+
+    tabFlame.addEventListener('click', () => {
+        tabFlame.classList.add('active');
+        tabPie.classList.remove('active');
+        viewerContainer.classList.add('hidden');
+        flamegraphView.classList.remove('hidden');
+    });
+}
+
+function renderFlamegraph() {
+    const container = document.getElementById('flamegraph-container');
+    const emptyMsg  = document.getElementById('flamegraph-empty');
+    if (!container) return;
+
+    const svg = window.app.flamegraphSvg;
+    if (svg) {
+        container.innerHTML = svg;
+        if (emptyMsg) emptyMsg.classList.add('hidden');
+        // Make SVG responsive
+        const svgEl = container.querySelector('svg');
+        if (svgEl) {
+            svgEl.removeAttribute('width');
+            svgEl.removeAttribute('height');
+            svgEl.setAttribute('preserveAspectRatio', 'xMinYMin meet');
+        }
+    } else {
+        container.innerHTML = '';
+        if (emptyMsg) emptyMsg.classList.remove('hidden');
     }
 }
 
@@ -471,17 +670,24 @@ function updateUI() {
     const hotPathsList = document.getElementById('hot-paths-list');
     hotPathsList.innerHTML = '';
 
-    let pathsToShow = profB ? [...profB.hot_paths] : [...profA.hot_paths];
+    let pathsToShow = profA ? profA.hot_paths : [];
 
-    // sorting logic
-    if (profB) {
-        pathsToShow.sort((a, b) => {
-            const pathA_in_A = profA.hot_paths.find(p => p.stack === a.stack);
-            const pathB_in_A = profA.hot_paths.find(p => p.stack === b.stack);
-            const diffA = a.gas - (pathA_in_A ? pathA_in_A.gas : 0);
-            const diffB = b.gas - (pathB_in_A ? pathB_in_A.gas : 0);
-            return Math.abs(diffB) - Math.abs(diffA); // Sort by largest change magnitude
-        });
+    if (profB && window.app.diffData && window.app.diffData.deltas && window.app.diffData.deltas.hot_paths) {
+        // In diff mode, we show common paths from the diff data
+        pathsToShow = window.app.diffData.deltas.hot_paths.common_paths;
+        // Sort by magnitude of percentage change for diff view
+        pathsToShow.sort((a, b) => Math.abs(b.percent_change) - Math.abs(a.percent_change));
+    } else {
+        // Manual merging/fallback for older data or single profile
+        const allPathsMap = new Map();
+        if (profA) profA.hot_paths.forEach(p => allPathsMap.set(p.stack, p));
+        if (profB) {
+            profB.hot_paths.forEach(p => {
+                if (!allPathsMap.has(p.stack)) allPathsMap.set(p.stack, p);
+            });
+        }
+        pathsToShow = Array.from(allPathsMap.values());
+        pathsToShow.sort((a, b) => (b.gas || 0) - (a.gas || 0));
     }
 
     if (pathsToShow) {
@@ -493,18 +699,31 @@ function updateUI() {
 
             let deltaDisplay = '';
             let rightSide = '';
-            if (profB) {
-                const pathA = profA.hot_paths.find(p => p.stack === path.stack);
-                const gasA = pathA ? pathA.gas : 0;
-                const gasDiff = path.gas - gasA;
-                const gasPct = gasA === 0 ? (path.gas > 0 ? 100 : 0) : (gasDiff / gasA) * 100;
+
+            // If it's a HotPathComparison object from Rust (it has percent_change)
+            const isDiffComparison = profB && path.hasOwnProperty('percent_change');
+
+            if (isDiffComparison) {
+                const gasDiff = path.gas_change || 0;
+                const gasPct = path.percent_change || 0;
                 const sign = gasDiff > 0 ? '+' : '';
                 const cls = gasDiff > 0 ? 'pos' : (gasDiff < 0 ? 'neg' : 'neutral');
                 deltaDisplay = `<span class="delta ${cls}">${sign}${gasPct.toFixed(2)}%</span>`;
-                rightSide = ''; // Don't show gas in hot path for diff
+                rightSide = ''; 
+            } else if (profB) {
+                // Manual fallback calculation
+                const pathA = profA.hot_paths.find(p => p.stack === path.stack);
+                const gasA = pathA ? (pathA.gas || 0) : 0;
+                const gasB = path.gas || 0;
+                const gasDiff = gasB - gasA;
+                const gasPct = gasA === 0 ? (gasB > 0 ? 100 : 0) : (gasDiff / gasA) * 100;
+                const sign = gasDiff > 0 ? '+' : '';
+                const cls = gasDiff > 0 ? 'pos' : (gasDiff < 0 ? 'neg' : 'neutral');
+                deltaDisplay = `<span class="delta ${cls}">${sign}${gasPct.toFixed(2)}%</span>`;
+                rightSide = ''; 
             } else {
-                deltaDisplay = `<span>[${path.percentage.toFixed(1)}%]</span>`;
-                rightSide = `<span style="opacity: 0.6;">${(path.gas / 1000).toFixed(0)}k gas</span>`;
+                deltaDisplay = `<span>[${(path.percentage || 0).toFixed(1)}%]</span>`;
+                rightSide = `<span style="opacity: 0.6;">${((path.gas || 0) / 1000).toFixed(0)}k gas</span>`;
             }
 
             li.innerHTML = `
@@ -534,4 +753,45 @@ function updateUI() {
             hotPathsList.appendChild(li);
         });
     }
+
+    // Render category breakdown in sidebar
+    renderCategoryStats(profB || profA);
+}
+
+/**
+ * Aggregate gas by category from a profile's hot_paths and render
+ * a compact color-coded bar list in the sidebar.
+ */
+function renderCategoryStats(profile) {
+    const list = document.getElementById('category-stats-list');
+    if (!list || !profile || !profile.hot_paths) return;
+
+    // Aggregate gas per category
+    const totals = {};
+    let grandTotal = 0;
+    profile.hot_paths.forEach(path => {
+        const cat = path.category || 'Other';
+        totals[cat] = (totals[cat] || 0) + path.gas;
+        grandTotal += path.gas;
+    });
+
+    if (grandTotal === 0) { list.innerHTML = ''; return; }
+
+    // Sort descending by gas
+    const sorted = Object.entries(totals).sort((a, b) => b[1] - a[1]);
+
+    list.innerHTML = sorted.map(([cat, gas]) => {
+        const pct = (gas / grandTotal * 100).toFixed(1);
+        const color = (CONFIG.colors[cat]) || CONFIG.colors.Other;
+        return [
+            '<li class="cat-stat-item">',
+            `  <span class="cat-dot" style="background:${color}"></span>`,
+            `  <span class="cat-name">${cat}</span>`,
+            '  <div class="cat-bar-track">',
+            `    <div class="cat-bar-fill" style="width:${pct}%;background:${color}"></div>`,
+            '  </div>',
+            `  <span class="cat-pct">${pct}%</span>`,
+            '</li>'
+        ].join('');
+    }).join('');
 }

@@ -1416,6 +1416,7 @@ version = "0.1.12"
 dependencies = [
  "addr2line",
  "anyhow",
+ "base64",
  "chrono",
  "clap",
  "colored",

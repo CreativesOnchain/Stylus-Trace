@@ -4,7 +4,7 @@
 
 use std::collections::HashMap;
 use stylus_trace_core::diff::*;
-use stylus_trace_core::parser::schema::{HostIoSummary, HotPath, Profile};
+use stylus_trace_core::parser::schema::{GasCategory, HostIoSummary, HotPath, Profile};
 
 // ============================================================================
 // SHARED TEST HELPERS
@@ -289,12 +289,14 @@ fn test_hot_paths_comparison_logic() {
         stack: "A;B".to_string(),
         gas: 100,
         percentage: 50.0,
+        category: GasCategory::UserCode,
         source_hint: None,
     }];
     let t_paths = vec![HotPath {
         stack: "A;B".to_string(),
         gas: 150,
         percentage: 75.0,
+        category: GasCategory::UserCode,
         source_hint: None,
     }];
 

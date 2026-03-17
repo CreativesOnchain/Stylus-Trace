@@ -356,7 +356,7 @@ fn handle_view(tx_or_path: &str, rpc: &str) -> Result<()> {
         info!("Opening existing profile: {}", path.display());
         let profile = read_profile(&path).context("Failed to read profile JSON")?;
         let viewer_path = path.with_extension("html");
-        generate_viewer(&profile, &viewer_path)?;
+        generate_viewer(&profile, None, &viewer_path)?;
         open_browser(&viewer_path)?;
     } else if tx_or_path.starts_with("0x") && tx_or_path.len() == 66 {
         info!("Capturing and viewing transaction: {}", tx_or_path);

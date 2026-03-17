@@ -7,6 +7,34 @@ use crate::aggregator::stack_builder::CollapsedStack;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+/// A category describing what type of operation a hot path primarily performs.
+///
+/// This is computed server-side from `HostIoType` knowledge so the frontend
+/// does not need brittle substring-matching heuristics.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "PascalCase")]
+pub enum GasCategory {
+    /// Expensive storage writes (flush/store)
+    StorageExpensive,
+    /// Cheaper storage reads (load/cache)
+    StorageNormal,
+    /// Cryptographic operations (keccak)
+    Crypto,
+    /// Memory / ABI operations (read_args, write_result)
+    Memory,
+    /// External calls (call, delegatecall, staticcall, create)
+    Call,
+    /// System / context queries (msg_sender, msg_value, block_hash, etc.)
+    System,
+    /// Root / entry-point frame
+    Root,
+    /// User-defined contract code not matching any known host op
+    #[default]
+    UserCode,
+    /// Aggregated remainder
+    Other,
+}
+
 /// Top-level profile structure written to JSON
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Profile {
@@ -57,6 +85,11 @@ pub struct HotPath {
 
     /// Percentage of total gas
     pub percentage: f64,
+
+    /// Gas category derived from the leaf node of the stack.
+    /// Computed server-side so the frontend doesn't need heuristics.
+    #[serde(default)]
+    pub category: GasCategory,
 
     /// Source hint (if debug symbols available)
     #[serde(skip_serializing_if = "Option::is_none")]

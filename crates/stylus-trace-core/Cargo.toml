@@ -33,3 +33,4 @@ addr2line.workspace = true
 object.workspace = true
 gimli.workspace = true
 tempfile.workspace = true
+base64.workspace = true

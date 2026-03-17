@@ -4,7 +4,7 @@
 //! These are the primary targets for optimization.
 
 use super::stack_builder::CollapsedStack;
-use crate::parser::schema::HotPath;
+use crate::parser::schema::{GasCategory, HotPath};
 use log::debug;
 
 /// Calculate hot paths from collapsed stacks
@@ -49,10 +49,16 @@ pub fn create_hot_path(stack: &CollapsedStack, denominator: u64) -> HotPath {
         0.0
     };
 
+    // Determine the category from the leaf node of the stack.
+    // E.g., for "root;call;storage_flush_cache" the leaf is "storage_flush_cache".
+    let leaf = stack.stack.split(';').next_back().unwrap_or(&stack.stack);
+    let category = categorize_stack_leaf(leaf);
+
     HotPath {
         stack: stack.stack.clone(),
         gas: stack.weight,
         percentage,
+        category,
         source_hint: stack.last_pc.map(|pc| crate::parser::schema::SourceHint {
             file: "unknown".to_string(),
             line: None,
@@ -60,6 +66,45 @@ pub fn create_hot_path(stack: &CollapsedStack, denominator: u64) -> HotPath {
             function: Some(format!("0x{:x}", pc)), // Temporary: store PC in function field
         }),
     }
+}
+
+/// Categorize a hot-path leaf node into a [`GasCategory`].
+///
+/// This mirrors (and supersedes) the frontend `getCategory()` heuristic in
+/// `viewer.js`, but is authoritative because it lives in the Rust backend
+/// where `HostIoType` semantics are well-defined.
+pub fn categorize_stack_leaf(leaf: &str) -> GasCategory {
+    let n = leaf.to_lowercase();
+
+    if n == "root" {
+        return GasCategory::Root;
+    }
+    // Expensive storage writes
+    if n.contains("storage_store") || n.contains("storage_flush") {
+        return GasCategory::StorageExpensive;
+    }
+    // Cheaper storage reads
+    if n.contains("storage_load") || n.contains("storage_cache") {
+        return GasCategory::StorageNormal;
+    }
+    // Cryptographic ops
+    if n.contains("keccak") {
+        return GasCategory::Crypto;
+    }
+    // Memory / ABI
+    if n.contains("memory") || n == "read_args" || n == "write_result" {
+        return GasCategory::Memory;
+    }
+    // External calls / creates
+    if n == "call" || n == "staticcall" || n == "delegatecall" || n.contains("create") {
+        return GasCategory::Call;
+    }
+    // System / context
+    if n.contains("msg_") || n.contains("block_") || n == "account_balance" {
+        return GasCategory::System;
+    }
+    // Catch-all: user code
+    GasCategory::UserCode
 }
 
 /// Calculate gas distribution statistics

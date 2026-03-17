@@ -133,10 +133,20 @@ pub fn execute_diff(args: DiffArgs) -> Result<()> {
             .with_extension("html");
 
         let report_json = serde_json::to_value(&report)?;
+
+        // Attempt to generate diff flamegraph SVG for the multi-view tab.
+        // If full stacks are not available (older capture), viewer still works without it.
+        let diff_svg = baseline
+            .all_stacks
+            .as_ref()
+            .zip(target.all_stacks.as_ref())
+            .and_then(|(b, t)| crate::flamegraph::generate_diff_flamegraph(b, t, None).ok());
+
         crate::output::viewer::generate_diff_viewer(
             &baseline,
             &target,
             &report_json,
+            diff_svg.as_deref(),
             &viewer_path,
         )?;
         info!("✓ Diff viewer generated at: {}", viewer_path.display());
