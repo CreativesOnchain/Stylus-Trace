@@ -10,3 +10,10 @@ profiles/
 flamegraphs.svg
 profile.json
 artifacts/
+!templates/starter-repo/profiles/
+!templates/starter-repo/profiles/*.json
+!templates/education/profiles/
+!templates/education/profiles/*.json
+!templates/orbit/artifacts/
+!templates/orbit/artifacts/capture/
+!templates/orbit/artifacts/capture/*.json

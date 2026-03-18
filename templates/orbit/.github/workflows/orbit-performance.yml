@@ -1,0 +1,53 @@
+name: Orbit Stylus Profile
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+
+jobs:
+  orbit-profile:
+    runs-on: ubuntu-latest
+    env:
+      ORBIT_RPC_URL: ${{ vars.ORBIT_RPC_URL }}
+      ORBIT_TX_HASH: ${{ vars.ORBIT_TX_HASH }}
+      ORBIT_CHAIN_ID: ${{ secrets.ORBIT_CHAIN_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install stylus-trace
+        run: cargo install stylus-trace-studio
+
+      - name: Validate Orbit settings
+        run: |
+          test -n "$ORBIT_RPC_URL"
+          test -n "$ORBIT_TX_HASH"
+          test -n "$ORBIT_CHAIN_ID"
+          echo "Profiling Orbit chain ID: $ORBIT_CHAIN_ID"
+
+      - name: Capture profile
+        run: |
+          mkdir -p artifacts/capture artifacts/diff
+          stylus-trace capture \
+            --rpc "$ORBIT_RPC_URL" \
+            --tx "$ORBIT_TX_HASH" \
+            --output artifacts/capture/current_profile.json \
+            --flamegraph artifacts/capture/capture.svg \
+            --summary
+
+      - name: Compare with committed baseline
+        run: |
+          stylus-trace diff \
+            artifacts/capture/baseline.json \
+            artifacts/capture/current_profile.json \
+            --output artifacts/diff/diff_report.json \
+            --flamegraph artifacts/diff/diff.svg \
+            --summary
+
+      - name: Upload Orbit artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: orbit-stylus-trace-artifacts
+          path: artifacts/

@@ -1,0 +1,11 @@
+[package]
+name = "stylus-counter"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+stylus-sdk = "0.6"
+alloy-primitives = "0.8"
+
+[lib]
+crate-type = ["cdylib", "rlib"]

@@ -1,0 +1,235 @@
+{
+  "version": "1.0.0",
+  "transaction_hash": "0x3399614ebaafc03f8e2d9d9f0e6249559346e2c8313322cde391b9760fd05e83",
+  "total_gas": 621681975,
+  "hostio_summary": {
+    "total_calls": 78,
+    "by_type": {
+      "emit_log": 10,
+      "storage_cache": 20,
+      "msg_value": 1,
+      "native_keccak256": 10,
+      "write_result": 1,
+      "msg_reentrant": 1,
+      "read_args": 1,
+      "msg_sender": 10,
+      "storage_load": 20,
+      "storage_flush_cache": 1,
+      "other": 3
+    },
+    "total_hostio_gas": 621681975
+  },
+  "hot_paths": [
+    {
+      "stack": "storage_flush_cache",
+      "gas": 400068073,
+      "percentage": 64.35252895984317,
+      "source_hint": {
+        "file": "unknown",
+        "line": null,
+        "column": null,
+        "function": "0x0"
+      }
+    },
+    {
+      "stack": "emit_log",
+      "gas": 176497340,
+      "percentage": 28.390293928016813,
+      "source_hint": {
+        "file": "unknown",
+        "line": null,
+        "column": null,
+        "function": "0x0"
+      }
+    },
+    {
+      "stack": "storage_load_bytes32",
+      "gas": 42469600,
+      "percentage": 6.831402824571196,
+      "source_hint": {
+        "file": "unknown",
+        "line": null,
+        "column": null,
+        "function": "0x0"
+      }
+    },
+    {
+      "stack": "native_keccak256",
+      "gas": 1218000,
+      "percentage": 0.19592010850885613,
+      "source_hint": {
+        "file": "unknown",
+        "line": null,
+        "column": null,
+        "function": "0x0"
+      }
+    },
+    {
+      "stack": "storage_cache_bytes32",
+      "gas": 1209600,
+      "percentage": 0.19456893534672612,
+      "source_hint": {
+        "file": "unknown",
+        "line": null,
+        "column": null,
+        "function": "0x0"
+      }
+    },
+    {
+      "stack": "msg_sender",
+      "gas": 134400,
+      "percentage": 0.02161877059408068,
+      "source_hint": {
+        "file": "unknown",
+        "line": null,
+        "column": null,
+        "function": "0x0"
+      }
+    },
+    {
+      "stack": "write_result",
+      "gas": 41162,
+      "percentage": 0.006621070202332953,
+      "source_hint": {
+        "file": "unknown",
+        "line": null,
+        "column": null,
+        "function": "0x0"
+      }
+    },
+    {
+      "stack": "read_args",
+      "gas": 13560,
+      "percentage": 0.002181179533152783,
+      "source_hint": {
+        "file": "unknown",
+        "line": null,
+        "column": null,
+        "function": "0x0"
+      }
+    },
+    {
+      "stack": "msg_value",
+      "gas": 13440,
+      "percentage": 0.002161877059408068,
+      "source_hint": {
+        "file": "unknown",
+        "line": null,
+        "column": null,
+        "function": "0x0"
+      }
+    },
+    {
+      "stack": "pay_for_memory_grow",
+      "gas": 8400,
+      "percentage": 0.0013511731621300425,
+      "source_hint": {
+        "file": "unknown",
+        "line": null,
+        "column": null,
+        "function": "0x0"
+      }
+    },
+    {
+      "stack": "msg_reentrant",
+      "gas": 8400,
+      "percentage": 0.0013511731621300425,
+      "source_hint": {
+        "file": "unknown",
+        "line": null,
+        "column": null,
+        "function": "0x0"
+      }
+    },
+    {
+      "stack": "user_returned",
+      "gas": 0,
+      "percentage": 0.0,
+      "source_hint": {
+        "file": "unknown",
+        "line": null,
+        "column": null,
+        "function": "0x0"
+      }
+    },
+    {
+      "stack": "user_entrypoint",
+      "gas": 0,
+      "percentage": 0.0,
+      "source_hint": {
+        "file": "unknown",
+        "line": null,
+        "column": null,
+        "function": "0x0"
+      }
+    }
+  ],
+  "all_stacks": [
+    {
+      "stack": "storage_flush_cache",
+      "weight": 400068073,
+      "last_pc": 0
+    },
+    {
+      "stack": "emit_log",
+      "weight": 176497340,
+      "last_pc": 0
+    },
+    {
+      "stack": "storage_load_bytes32",
+      "weight": 42469600,
+      "last_pc": 0
+    },
+    {
+      "stack": "native_keccak256",
+      "weight": 1218000,
+      "last_pc": 0
+    },
+    {
+      "stack": "storage_cache_bytes32",
+      "weight": 1209600,
+      "last_pc": 0
+    },
+    {
+      "stack": "msg_sender",
+      "weight": 134400,
+      "last_pc": 0
+    },
+    {
+      "stack": "write_result",
+      "weight": 41162,
+      "last_pc": 0
+    },
+    {
+      "stack": "read_args",
+      "weight": 13560,
+      "last_pc": 0
+    },
+    {
+      "stack": "msg_value",
+      "weight": 13440,
+      "last_pc": 0
+    },
+    {
+      "stack": "pay_for_memory_grow",
+      "weight": 8400,
+      "last_pc": 0
+    },
+    {
+      "stack": "msg_reentrant",
+      "weight": 8400,
+      "last_pc": 0
+    },
+    {
+      "stack": "user_returned",
+      "weight": 0,
+      "last_pc": 0
+    },
+    {
+      "stack": "user_entrypoint",
+      "weight": 0,
+      "last_pc": 0
+    }
+  ],
+  "generated_at": "2026-02-19T00:41:58.238020041+00:00"
+}

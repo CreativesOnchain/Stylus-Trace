@@ -45,57 +45,44 @@ git clone https://github.com/CreativesOnchain/Stylus-Trace.git
 cd Stylus-Trace
 
 # Install from the workspace (Native build, NOT WASM)
-cargo install --path bin/stylus-trace
+cargo install --path bin/stylus-trace-studio
 ```
 
 ---
 
 ## 🛠 Quick Start
 
-### 1. Prerequisites
-Ensure you have the following installed:
-- **Docker** (for Nitro dev node)
-- **Rust** (1.72+)
-- **Foundry** (`cast`)
-- **Cargo Stylus** (`cargo install --force cargo-stylus`)
-
-### Step 1: Start Nitro Dev Node
+Milestone 4 KPI target: first profile in about 10 minutes.
 
 ```bash
-git clone https://github.com/OffchainLabs/nitro-devnode.git
-cd nitro-devnode && ./run-dev-node.sh
+# Copy starter template from this repository
+cp -R templates/starter-repo stylus-trace-starter
+cd stylus-trace-starter
+
+# Produce flamegraph artifacts from bundled sample profiles
+./scripts/run-local-profile.sh
 ```
 
-### 3. Build & Profile your Contract
-In your **contract's** directory:
+Outputs:
+- `artifacts/diff/diff.svg`
+- `artifacts/diff/diff_report.json`
 
-```bash
-# Build the contract to WASM
-cargo build --release --target wasm32-unknown-unknown
+For live transaction capture, see [docs/quickstart.md](docs/quickstart.md).
 
-# This will generate output as profile.json and flamegraph.svg in specified file
-stylus-trace capture \
---rpc <RPC> \
---tx <TX_HASH> \
---output <anything.json> \
---flamegraph <anything.svg> \
---summary
+---
 
-# Profile and immediately launch the Cyber Viewer
-stylus-trace capture --tx <TX_HASH> --view
+## 📚 Docs
 
-OR
+- [Quickstart](docs/quickstart.md)
+- [CI Cookbook](docs/ci-cookbook.md)
+- [Troubleshooting](docs/troubleshooting.md)
+- [Provider Notes](docs/provider-notes.md)
 
-# Generate output as profile.json and interactive flamegraph
-stylus-trace capture --tx <TX_HASH> --flamegraph --summary
+## 🧩 Published Templates
 
-```
-
-**What happens?**
-- `artifacts/profile.json`: A detailed data structure of your transaction.
-- `artifacts/viewer.html`: A self-contained, high-performance web viewer.
-- `artifacts/flamegraph.svg`: A classic interactive SVG snapshot.
-- **Terminal Output**: A high-level summary of the hottest paths.
+- Starter repo: [templates/starter-repo](templates/starter-repo)
+- Education template: [templates/education](templates/education)
+- Orbit template: [templates/orbit](templates/orbit)
 
 ---
 
@@ -140,10 +127,10 @@ This feature will be enabled automatically once upstream tracer support is avail
 
 ### `view`
 
-| Flag       | Description                                 | Default |
-|------------|---------------------------------------------|---------|
-| `--target` | **(Required)** Path to profile JSON to view | -       |
-| `--baseline` | Optional baseline profile JSON for comparison| -       |
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--tx` | Transaction hash or profile JSON path | - |
+| `--rpc` | RPC endpoint URL used when `--tx` is a hash | `http://localhost:8547` |
 
 ### `ci init`
 | Flag | Description | Default |

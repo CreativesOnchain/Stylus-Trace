@@ -1,0 +1,49 @@
+name: Stylus Trace Starter CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install stylus-trace
+        run: cargo install stylus-trace-studio
+
+      - name: Prepare profiles
+        run: |
+          mkdir -p artifacts/capture artifacts/diff
+          cp profiles/baseline.json artifacts/capture/baseline.json
+          cp profiles/current_profile.json artifacts/capture/current_profile.json
+
+      - name: Optional live capture
+        if: ${{ vars.STYLUS_TRACE_RPC_URL != '' && vars.STYLUS_TRACE_TX_HASH != '' }}
+        run: |
+          stylus-trace capture \
+            --rpc "${{ vars.STYLUS_TRACE_RPC_URL }}" \
+            --tx "${{ vars.STYLUS_TRACE_TX_HASH }}" \
+            --output artifacts/capture/current_profile.json \
+            --flamegraph artifacts/capture/capture.svg \
+            --summary
+
+      - name: Generate diff artifacts
+        run: |
+          stylus-trace diff \
+            artifacts/capture/baseline.json \
+            artifacts/capture/current_profile.json \
+            --output artifacts/diff/diff_report.json \
+            --flamegraph artifacts/diff/diff.svg \
+            --summary
+
+      - name: Upload profiling artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: stylus-trace-artifacts
+          path: artifacts/
